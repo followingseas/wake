@@ -109,15 +109,15 @@ export function normalizeUserText(rawText: string): {
     const stdout = extractTag(stripped, 'local-command-stdout')
     return {
       text: stdout ?? '',
-      meta: { label: args ? `${name} ${args}` : name, detail: stdout }
+      meta: { kind: 'command', label: args ? `${name} ${args}` : name, detail: stdout }
     }
   }
   if (stripped.startsWith('<local-command-stdout>')) {
     const stdout = extractTag(stripped, 'local-command-stdout') ?? ''
-    return { text: stdout, meta: { label: '커맨드 출력', detail: stdout } }
+    return { text: stdout, meta: { kind: 'output', label: null, detail: stdout } }
   }
   if (!stripped && rawText.trim()) {
-    return { text: '', meta: { label: '시스템 컨텍스트', detail: rawText.trim() } }
+    return { text: '', meta: { kind: 'context', label: null, detail: rawText.trim() } }
   }
   return { text: stripped, meta: null }
 }

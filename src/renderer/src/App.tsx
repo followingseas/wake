@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
-import type { Conversation, ProjectInfo, SessionMeta, UpdateInfo } from '../../shared/types'
+import type {
+  AppSettings,
+  Conversation,
+  ProjectInfo,
+  SessionMeta,
+  UpdateInfo
+} from '../../shared/types'
+import { makeTranslate, resolveLanguage } from './i18n'
+import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { SettingsDialog } from './components/SettingsDialog'
 
 export default function App(): ReactElement {
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
   const [projects, setProjects] = useState<ProjectInfo[]>([])
   const [sessions, setSessions] = useState<Record<string, SessionMeta[]>>({})
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -19,6 +28,19 @@ export default function App(): ReactElement {
   const [toast, setToast] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
+
+  const lang = resolveLanguage(settings.language)
+  const t = useMemo(() => makeTranslate(lang), [lang])
+
+  const updateSettings = useCallback(async (partial: Partial<AppSettings>) => {
+    const info = await window.api.saveSettings(partial)
+    setSettings(info.settings)
+  }, [])
+
+  const prefs = useMemo<Prefs>(
+    () => ({ settings, lang, t, updateSettings }),
+    [settings, lang, t, updateSettings]
+  )
 
   const showToast = useCallback((message: string) => {
     setToast(message)
@@ -36,6 +58,14 @@ export default function App(): ReactElement {
   }, [])
 
   useEffect(() => {
+    window.api.getSettings().then((info) => {
+      setSettings(info.settings)
+      if (info.settings.checkUpdatesOnLaunch) {
+        window.api.checkForUpdate().then((updateInfo) => {
+          if (updateInfo.hasUpdate) setUpdate(updateInfo)
+        })
+      }
+    })
     window.api.listProjects().then((list) => {
       setProjects(list)
       if (list.length > 0) {
@@ -52,16 +82,18 @@ export default function App(): ReactElement {
   }, [query, projects, loadSessions])
 
   useEffect(() => {
-    window.api.checkForUpdate().then((info) => {
-      if (info.hasUpdate) setUpdate(info)
-    })
-  }, [])
-
-  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
         event.preventDefault()
         searchRef.current?.focus()
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key === ',') {
+        event.preventDefault()
+        setShowSettings(true)
+      }
+      if (event.key === 'Escape') {
+        setShowSettings(false)
+        setDeleteTarget(null)
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -107,12 +139,12 @@ export default function App(): ReactElement {
       const action = kind === 'resume' ? window.api.resumeSession : window.api.forkSession
       const result = await action(selected.id, cwd)
       if (result.ok) {
-        showToast(kind === 'resume' ? '터미널에서 세션을 엽니다' : '터미널에서 fork 세션을 엽니다')
+        showToast(kind === 'resume' ? t('toast.resume') : t('toast.fork'))
       } else {
-        showToast(`실행 실패: ${result.error ?? '알 수 없는 오류'}`)
+        showToast(t('toast.actionFailed', { error: result.error ?? t('toast.unknownError') }))
       }
     },
-    [selected, selectedProject, showToast]
+    [selected, selectedProject, showToast, t]
   )
 
   const confirmDelete = useCallback(async () => {
@@ -121,7 +153,7 @@ export default function App(): ReactElement {
     setDeleteTarget(null)
     const result = await window.api.deleteSession(target.filePath)
     if (!result.ok) {
-      showToast(`삭제 실패: ${result.error ?? '알 수 없는 오류'}`)
+      showToast(t('toast.deleteFailed', { error: result.error ?? t('toast.unknownError') }))
       return
     }
     loadedProjects.current.delete(target.projectId)
@@ -137,85 +169,79 @@ export default function App(): ReactElement {
       setSelected(null)
       setConversation(null)
     }
-    showToast('세션을 휴지통으로 이동했습니다')
-  }, [deleteTarget, selected, showToast])
+    showToast(t('toast.deleted'))
+  }, [deleteTarget, selected, showToast, t])
 
   return (
-    <div className="app">
-      <Sidebar
-        projects={projects}
-        sessions={sessions}
-        expanded={expanded}
-        selectedSessionId={selected?.id ?? null}
-        query={query}
-        searchRef={searchRef}
-        onQueryChange={setQuery}
-        onToggleProject={toggleProject}
-        onSelectSession={selectSession}
-        onOpenSettings={() => setShowSettings(true)}
-      />
-      {selected ? (
-        <ConversationView
-          session={selected}
-          project={selectedProject}
-          conversation={conversation}
-          loading={loadingConversation}
-          onResume={() => runAction('resume')}
-          onFork={() => runAction('fork')}
-          onDelete={() => setDeleteTarget(selected)}
-          onReveal={() => window.api.revealSession(selected.filePath)}
+    <PrefsContext.Provider value={prefs}>
+      <div className="app" data-font-scale={settings.fontScale}>
+        <Sidebar
+          projects={projects}
+          sessions={sessions}
+          expanded={expanded}
+          selectedSessionId={selected?.id ?? null}
+          query={query}
+          searchRef={searchRef}
+          onQueryChange={setQuery}
+          onToggleProject={toggleProject}
+          onSelectSession={selectSession}
+          onOpenSettings={() => setShowSettings(true)}
         />
-      ) : (
-        <main className="conversation conversation--empty">
-          <div className="empty-state">
-            <p className="empty-state__mark">❯</p>
-            <p>왼쪽에서 세션을 선택하세요</p>
-            <p className="empty-state__hint">⌘F 검색 · 클릭으로 열람</p>
+        {selected ? (
+          <ConversationView
+            session={selected}
+            project={selectedProject}
+            conversation={conversation}
+            loading={loadingConversation}
+            onResume={() => runAction('resume')}
+            onFork={() => runAction('fork')}
+            onDelete={() => setDeleteTarget(selected)}
+            onReveal={() => window.api.revealSession(selected.filePath)}
+          />
+        ) : (
+          <main className="conversation conversation--empty">
+            <div className="empty-state">
+              <p className="empty-state__mark">❯</p>
+              <p>{t('empty.title')}</p>
+              <p className="empty-state__hint">{t('empty.hint')}</p>
+            </div>
+          </main>
+        )}
+        {deleteTarget && (
+          <ConfirmDialog
+            title={t('delete.title')}
+            body={t('delete.body', { title: deleteTarget.title })}
+            confirmLabel={t('delete.confirm')}
+            onConfirm={confirmDelete}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        )}
+        {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
+        {update && (
+          <div className="update-banner" role="status">
+            <span className="update-banner__text">
+              {t('update.banner', { v: `v${update.latestVersion}` })}
+            </span>
+            <button
+              className="btn btn--primary"
+              onClick={() => {
+                window.api.openExternal(update.url)
+                setUpdate(null)
+              }}
+            >
+              {t('update.download')}
+            </button>
+            <button
+              className="update-banner__close"
+              onClick={() => setUpdate(null)}
+              aria-label={t('common.close')}
+            >
+              ×
+            </button>
           </div>
-        </main>
-      )}
-      {deleteTarget && (
-        <ConfirmDialog
-          title="세션 삭제"
-          body={`"${deleteTarget.title}" 세션 파일을 휴지통으로 이동합니다. 휴지통에서 복구할 수 있습니다.`}
-          confirmLabel="휴지통으로 이동"
-          onConfirm={confirmDelete}
-          onCancel={() => setDeleteTarget(null)}
-        />
-      )}
-      {showSettings && (
-        <SettingsDialog
-          onClose={() => setShowSettings(false)}
-          onSaved={() => {
-            setShowSettings(false)
-            showToast('설정을 저장했습니다')
-          }}
-        />
-      )}
-      {update && (
-        <div className="update-banner" role="status">
-          <span className="update-banner__text">
-            새 버전 <strong>v{update.latestVersion}</strong> 이 나왔습니다
-          </span>
-          <button
-            className="btn btn--primary"
-            onClick={() => {
-              window.api.openExternal(update.url)
-              setUpdate(null)
-            }}
-          >
-            다운로드
-          </button>
-          <button
-            className="update-banner__close"
-            onClick={() => setUpdate(null)}
-            aria-label="닫기"
-          >
-            ×
-          </button>
-        </div>
-      )}
-      {toast && <div className="toast">{toast}</div>}
-    </div>
+        )}
+        {toast && <div className="toast">{toast}</div>}
+      </div>
+    </PrefsContext.Provider>
   )
 }

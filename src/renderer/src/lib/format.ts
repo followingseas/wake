@@ -1,13 +1,15 @@
-export function formatRelativeTime(timestamp: number): string {
+import type { Translate } from '../i18n'
+
+export function formatRelativeTime(timestamp: number, t: Translate): string {
   const diffMs = Date.now() - timestamp
   const minutes = Math.floor(diffMs / 60_000)
-  if (minutes < 1) return '방금'
-  if (minutes < 60) return `${minutes}분 전`
+  if (minutes < 1) return t('time.now')
+  if (minutes < 60) return t('time.minutes', { n: minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}시간 전`
+  if (hours < 24) return t('time.hours', { n: hours })
   const days = Math.floor(hours / 24)
-  if (days === 1) return '어제'
-  if (days < 7) return `${days}일 전`
+  if (days === 1) return t('time.yesterday')
+  if (days < 7) return t('time.days', { n: days })
   const date = new Date(timestamp)
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
 }

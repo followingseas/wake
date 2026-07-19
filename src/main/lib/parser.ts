@@ -58,7 +58,7 @@ export async function parseConversation(filePath: string): Promise<Conversation>
           timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : null,
           text: '',
           images: [],
-          meta: { label: summarize(text, 100), detail: text.trim() }
+          meta: { kind: 'injected', label: summarize(text, 100), detail: text.trim() }
         })
         return
       }
