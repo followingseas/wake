@@ -27,6 +27,12 @@
 
 ## 설치 및 실행
 
+### 다운로드 (권장)
+
+[Releases](https://github.com/jeongph/wake/releases)에서 최신 `.dmg`를 다운로드해 마운트한 뒤, `Wake.app`을 Applications 폴더로 옮기면 설치가 끝납니다. 현재 macOS(Apple Silicon) 빌드를 제공합니다.
+
+> 서명·공증되지 않은 빌드이므로 첫 실행 시 Gatekeeper 경고가 표시됩니다. 시스템 설정 → 개인정보 보호 및 보안에서 "그래도 열기"를 눌러 허용하십시오.
+
 ### 개발 모드로 실행
 
 ```bash
