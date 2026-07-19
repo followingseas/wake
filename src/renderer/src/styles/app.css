@@ -158,14 +158,21 @@ button {
 }
 
 .project__chevron {
-  font-size: 10px;
-  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-2);
   transition: transform 0.15s ease;
   flex-shrink: 0;
 }
 
+.project__header:hover .project__chevron {
+  color: var(--copper);
+}
+
 .project__chevron.is-open {
   transform: rotate(90deg);
+  color: var(--copper);
 }
 
 .project__name {
