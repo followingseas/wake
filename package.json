@@ -1,6 +1,6 @@
 {
   "name": "wake",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Wake — trace the wake of your Claude Code sessions. A local conversation history viewer.",
   "main": "./out/main/index.js",
   "author": "jeongph",
