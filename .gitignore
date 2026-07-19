@@ -1,0 +1,24 @@
+# 내부 문서 (public 레포에는 코드와 README만 공개)
+docs/
+
+# 의존성/빌드 산출물
+node_modules/
+dist/
+out/
+release/
+*.local
+
+# 로그/환경
+npm-debug.log*
+.DS_Store
+.env
+.env.*
+
+# 에디터
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.claude/
