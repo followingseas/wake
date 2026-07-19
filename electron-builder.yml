@@ -1,5 +1,5 @@
-appId: com.jeongph.claude-history-viewer
-productName: Claude History Viewer
+appId: com.jeongph.wake
+productName: Wake
 directories:
   buildResources: build
 files:
@@ -13,7 +13,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: claude-history-viewer
+  executableName: wake
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
