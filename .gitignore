@@ -1,5 +1,6 @@
 # 내부 문서 (public 레포에는 코드와 README만 공개)
 docs/
+CLAUDE.md
 
 # 의존성/빌드 산출물
 node_modules/
