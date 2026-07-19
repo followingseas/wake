@@ -72,6 +72,21 @@ export interface ActionResult {
   error?: string
 }
 
+export interface TerminalOption {
+  id: string
+  label: string
+}
+
+export interface AppSettings {
+  /** 'auto'면 OS 기본 터미널을 사용한다 */
+  terminal: string
+}
+
+export interface SettingsInfo {
+  settings: AppSettings
+  terminals: TerminalOption[]
+}
+
 export interface ClaudeHistoryApi {
   listProjects: () => Promise<ProjectInfo[]>
   listSessions: (projectId: string) => Promise<SessionMeta[]>
@@ -81,4 +96,6 @@ export interface ClaudeHistoryApi {
   deleteSession: (filePath: string) => Promise<ActionResult>
   revealSession: (filePath: string) => Promise<ActionResult>
   openExternal: (url: string) => Promise<void>
+  getSettings: () => Promise<SettingsInfo>
+  saveSettings: (settings: AppSettings) => Promise<SettingsInfo>
 }

@@ -3,6 +3,7 @@ import type { Conversation, ProjectInfo, SessionMeta } from '../../shared/types'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
 import { ConfirmDialog } from './components/ConfirmDialog'
+import { SettingsDialog } from './components/SettingsDialog'
 
 export default function App(): ReactElement {
   const [projects, setProjects] = useState<ProjectInfo[]>([])
@@ -13,6 +14,7 @@ export default function App(): ReactElement {
   const [loadingConversation, setLoadingConversation] = useState(false)
   const [query, setQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null)
+  const [showSettings, setShowSettings] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
@@ -143,6 +145,7 @@ export default function App(): ReactElement {
         onQueryChange={setQuery}
         onToggleProject={toggleProject}
         onSelectSession={selectSession}
+        onOpenSettings={() => setShowSettings(true)}
       />
       {selected ? (
         <ConversationView
@@ -171,6 +174,15 @@ export default function App(): ReactElement {
           confirmLabel="휴지통으로 이동"
           onConfirm={confirmDelete}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+      {showSettings && (
+        <SettingsDialog
+          onClose={() => setShowSettings(false)}
+          onSaved={() => {
+            setShowSettings(false)
+            showToast('설정을 저장했습니다')
+          }}
         />
       )}
       {toast && <div className="toast">{toast}</div>}

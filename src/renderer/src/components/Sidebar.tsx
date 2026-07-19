@@ -12,6 +12,7 @@ interface Props {
   onQueryChange: (query: string) => void
   onToggleProject: (projectId: string) => void
   onSelectSession: (session: SessionMeta) => void
+  onOpenSettings: () => void
 }
 
 function matches(session: SessionMeta, query: string): boolean {
@@ -31,14 +32,23 @@ export function Sidebar({
   searchRef,
   onQueryChange,
   onToggleProject,
-  onSelectSession
+  onSelectSession,
+  onOpenSettings
 }: Props): ReactElement {
   const searching = query.trim().length > 0
 
   return (
     <aside className="sidebar">
-      <div className="sidebar__titlebar" aria-hidden="true">
-        <span className="sidebar__appname">Claude History</span>
+      <div className="sidebar__titlebar">
+        <span className="sidebar__appname">Wake</span>
+        <button
+          className="sidebar__settings"
+          onClick={onOpenSettings}
+          title="설정"
+          aria-label="설정"
+        >
+          ⚙
+        </button>
       </div>
       <div className="sidebar__search">
         <input
