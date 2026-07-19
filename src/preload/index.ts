@@ -1,22 +1,24 @@
-import { contextBridge } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import { contextBridge, ipcRenderer } from 'electron'
+import type { ClaudeHistoryApi } from '../shared/types'
 
-// Custom APIs for renderer
-const api = {}
+const api: ClaudeHistoryApi = {
+  listProjects: () => ipcRenderer.invoke('projects:list'),
+  listSessions: (projectId) => ipcRenderer.invoke('sessions:list', projectId),
+  loadConversation: (filePath) => ipcRenderer.invoke('conversation:load', filePath),
+  resumeSession: (sessionId, cwd) => ipcRenderer.invoke('session:resume', sessionId, cwd),
+  forkSession: (sessionId, cwd) => ipcRenderer.invoke('session:fork', sessionId, cwd),
+  deleteSession: (filePath) => ipcRenderer.invoke('session:delete', filePath),
+  revealSession: (filePath) => ipcRenderer.invoke('session:reveal', filePath),
+  openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url)
+}
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
   // @ts-ignore (define in dts)
   window.api = api
 }
