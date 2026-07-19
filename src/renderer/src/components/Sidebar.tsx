@@ -16,6 +16,23 @@ interface Props {
   onOpenSettings: () => void
 }
 
+function Chevron({ open }: { open: boolean }): ReactElement {
+  return (
+    <span className={`project__chevron${open ? ' is-open' : ''}`} aria-hidden="true">
+      <svg viewBox="0 0 16 16" width="14" height="14">
+        <path
+          d="M6 4l4 4-4 4"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  )
+}
+
 function matches(session: SessionMeta, query: string): boolean {
   const lowered = query.toLowerCase()
   return (
@@ -77,7 +94,7 @@ export function Sidebar({
                 onClick={() => onToggleProject(project.id)}
                 aria-expanded={isOpen}
               >
-                <span className={`project__chevron${isOpen ? ' is-open' : ''}`}>▸</span>
+                <Chevron open={isOpen} />
                 <span className="project__name">{project.name}</span>
                 <span className="project__count">{project.sessionCount}</span>
               </button>
