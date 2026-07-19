@@ -125,6 +125,7 @@ export function normalizeUserText(rawText: string): {
 /** 목록/제목에 쓸 수 있는 실제 사용자 발화인지 판별한다. */
 export function isRealUserPrompt(entry: JsonlEntry): string | null {
   if (entry.type !== 'user' || entry.isSidechain === true) return null
+  if (entry.isMeta === true) return null
   const { text, toolResults } = parseUserContent(entry)
   if (toolResults.length > 0) return null
   const { text: normalized, meta } = normalizeUserText(text)

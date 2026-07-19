@@ -1,7 +1,7 @@
 import { basename } from 'path'
 import type { AssistantBlock, Conversation, ConversationItem } from '../../shared/types'
 import { forEachJsonlLine } from './jsonl'
-import { getMessage, normalizeUserText, parseUserContent } from './entries'
+import { getMessage, normalizeUserText, parseUserContent, summarize } from './entries'
 
 interface RawContentBlock {
   type?: string
@@ -44,6 +44,24 @@ export async function parseConversation(filePath: string): Promise<Conversation>
       }
       // tool_result 전용 엔트리는 어시스턴트 턴 중간 단계이므로 별도 아이템으로 만들지 않는다
       if (toolResults.length > 0 && !text.trim() && images.length === 0) return
+
+      // isMeta는 하네스가 주입한 user 롤 메시지(스킬 지침, 커맨드 캐비앳 등)를 표시한다
+      if (entry.isMeta === true) {
+        if (!text.trim()) {
+          hiddenCount += 1
+          return
+        }
+        flushAssistant()
+        items.push({
+          kind: 'user',
+          uuid: typeof entry.uuid === 'string' ? entry.uuid : `user-${items.length}`,
+          timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : null,
+          text: '',
+          images: [],
+          meta: { label: summarize(text, 100), detail: text.trim() }
+        })
+        return
+      }
 
       const { text: normalized, meta } = normalizeUserText(text)
       if (!normalized && !meta && images.length === 0) {
