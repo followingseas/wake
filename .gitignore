@@ -22,3 +22,6 @@ npm-debug.log*
 *.njsproj
 *.sln
 .claude/
+
+# 캐시
+.eslintcache

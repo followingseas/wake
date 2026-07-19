@@ -1,0 +1,148 @@
+import { readdir, stat } from 'fs/promises'
+import { homedir } from 'os'
+import { basename, join } from 'path'
+import type { ProjectInfo, SessionMeta } from '../../shared/types'
+import { forEachJsonlLine, readHead } from './jsonl'
+import { getMessage, isRealUserPrompt, summarize } from './entries'
+
+export function projectsRoot(): string {
+  return join(homedir(), '.claude', 'projects')
+}
+
+async function detectRealPath(sessionFiles: string[]): Promise<string | null> {
+  for (const file of sessionFiles) {
+    const head = await readHead(file, 32 * 1024).catch(() => '')
+    for (const line of head.split('\n')) {
+      if (!line.includes('"cwd"')) continue
+      try {
+        const entry = JSON.parse(line)
+        if (typeof entry.cwd === 'string' && entry.cwd) return entry.cwd
+      } catch {
+        continue
+      }
+    }
+  }
+  return null
+}
+
+export async function listProjects(): Promise<ProjectInfo[]> {
+  const root = projectsRoot()
+  const dirents = await readdir(root, { withFileTypes: true }).catch(() => [])
+  const projects: ProjectInfo[] = []
+
+  for (const dirent of dirents) {
+    if (!dirent.isDirectory()) continue
+    const dirPath = join(root, dirent.name)
+    const files = await readdir(dirPath).catch(() => [])
+    const sessionFiles: { path: string; mtimeMs: number }[] = []
+    for (const file of files) {
+      if (!file.endsWith('.jsonl')) continue
+      const filePath = join(dirPath, file)
+      const info = await stat(filePath).catch(() => null)
+      if (info && info.size > 0) sessionFiles.push({ path: filePath, mtimeMs: info.mtimeMs })
+    }
+    if (sessionFiles.length === 0) continue
+
+    sessionFiles.sort((a, b) => b.mtimeMs - a.mtimeMs)
+    const realPath = await detectRealPath(sessionFiles.slice(0, 3).map((f) => f.path))
+    projects.push({
+      id: dirent.name,
+      dirName: dirent.name,
+      dirPath,
+      realPath,
+      name: realPath
+        ? basename(realPath)
+        : (dirent.name.split('-').filter(Boolean).pop() ?? dirent.name),
+      sessionCount: sessionFiles.length,
+      lastActiveAt: sessionFiles[0].mtimeMs
+    })
+  }
+
+  return projects.sort((a, b) => b.lastActiveAt - a.lastActiveAt)
+}
+
+interface MetaCacheEntry {
+  mtimeMs: number
+  size: number
+  meta: SessionMeta
+}
+
+const metaCache = new Map<string, MetaCacheEntry>()
+
+async function readSessionMeta(
+  projectId: string,
+  filePath: string,
+  mtimeMs: number,
+  size: number
+): Promise<SessionMeta> {
+  const cached = metaCache.get(filePath)
+  if (cached && cached.mtimeMs === mtimeMs && cached.size === size) return cached.meta
+
+  let title: string | null = null
+  let summaryTitle: string | null = null
+  let firstPrompt: string | null = null
+  let firstTimestamp: string | null = null
+  let lastTimestamp: string | null = null
+  let gitBranch: string | null = null
+  let cwd: string | null = null
+  let userCount = 0
+  const assistantMessageIds = new Set<string>()
+
+  await forEachJsonlLine(filePath, (entry) => {
+    if (entry.type === 'ai-title' && typeof entry.aiTitle === 'string') {
+      title = entry.aiTitle
+      return
+    }
+    if (entry.type === 'summary' && typeof entry.summary === 'string') {
+      summaryTitle = entry.summary
+      return
+    }
+    if (typeof entry.timestamp === 'string') {
+      firstTimestamp ??= entry.timestamp
+      lastTimestamp = entry.timestamp
+    }
+    if (typeof entry.gitBranch === 'string' && entry.gitBranch) gitBranch = entry.gitBranch
+    if (typeof entry.cwd === 'string' && entry.cwd) cwd = entry.cwd
+
+    if (entry.type === 'user') {
+      const prompt = isRealUserPrompt(entry)
+      if (prompt) {
+        userCount += 1
+        firstPrompt ??= summarize(prompt, 120)
+      }
+    } else if (entry.type === 'assistant' && entry.isSidechain !== true) {
+      const id = getMessage(entry)?.id
+      if (typeof id === 'string') assistantMessageIds.add(id)
+    }
+  })
+
+  const meta: SessionMeta = {
+    id: basename(filePath, '.jsonl'),
+    projectId,
+    filePath,
+    title: title ?? summaryTitle ?? firstPrompt ?? '(빈 세션)',
+    firstPrompt,
+    messageCount: userCount + assistantMessageIds.size,
+    createdAt: firstTimestamp ? Date.parse(firstTimestamp) : null,
+    updatedAt: lastTimestamp ? Date.parse(lastTimestamp) : mtimeMs,
+    gitBranch,
+    cwd,
+    fileSize: size
+  }
+  metaCache.set(filePath, { mtimeMs, size, meta })
+  return meta
+}
+
+export async function listSessions(projectId: string): Promise<SessionMeta[]> {
+  const dirPath = join(projectsRoot(), projectId)
+  const files = await readdir(dirPath).catch(() => [])
+  const metas: SessionMeta[] = []
+  for (const file of files) {
+    if (!file.endsWith('.jsonl')) continue
+    const filePath = join(dirPath, file)
+    const info = await stat(filePath).catch(() => null)
+    if (!info || info.size === 0) continue
+    metas.push(await readSessionMeta(projectId, filePath, info.mtimeMs, info.size))
+  }
+  return metas.filter((meta) => meta.messageCount > 0).sort((a, b) => b.updatedAt - a.updatedAt)
+}
