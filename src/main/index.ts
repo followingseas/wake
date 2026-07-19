@@ -1,15 +1,39 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
+import { writeFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { listProjects, listSessions } from './lib/scanner'
+import { parseConversation } from './lib/parser'
+import { deleteSession, forkSession, resumeSession, revealSession } from './lib/actions'
+
+function registerIpcHandlers(): void {
+  ipcMain.handle('projects:list', () => listProjects())
+  ipcMain.handle('sessions:list', (_event, projectId: string) => listSessions(projectId))
+  ipcMain.handle('conversation:load', (_event, filePath: string) => parseConversation(filePath))
+  ipcMain.handle('session:resume', (_event, sessionId: string, cwd: string | null) =>
+    resumeSession(sessionId, cwd)
+  )
+  ipcMain.handle('session:fork', (_event, sessionId: string, cwd: string | null) =>
+    forkSession(sessionId, cwd)
+  )
+  ipcMain.handle('session:delete', (_event, filePath: string) => deleteSession(filePath))
+  ipcMain.handle('session:reveal', (_event, filePath: string) => revealSession(filePath))
+  ipcMain.handle('shell:openExternal', (_event, url: string) => {
+    if (/^https?:\/\//.test(url)) shell.openExternal(url)
+  })
+}
 
 function createWindow(): void {
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1280,
+    height: 860,
+    minWidth: 960,
+    minHeight: 600,
     show: false,
     autoHideMenuBar: true,
+    backgroundColor: '#171512',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -26,8 +50,27 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
+  // 개발용 스크린샷: CHV_CAPTURE=경로 로 실행하면 첫 세션을 열어 캡처하고 종료한다
+  if (process.env.CHV_CAPTURE) {
+    mainWindow.webContents.on('did-finish-load', () => {
+      setTimeout(async () => {
+        await mainWindow.webContents.executeJavaScript(
+          process.env.CHV_JS ?? `document.querySelector('.session')?.click()`
+        )
+        await new Promise((resolve) => setTimeout(resolve, 2500))
+        if (process.env.CHV_SCROLL) {
+          await mainWindow.webContents.executeJavaScript(
+            `document.querySelector('.conversation__scroll')?.scrollBy(0, ${Number(process.env.CHV_SCROLL)})`
+          )
+          await new Promise((resolve) => setTimeout(resolve, 400))
+        }
+        const image = await mainWindow.webContents.capturePage()
+        await writeFile(process.env.CHV_CAPTURE as string, image.toPNG())
+        app.quit()
+      }, 2000)
+    })
+  }
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -35,40 +78,23 @@ function createWindow(): void {
   }
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.jeongph.claude-history-viewer')
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
-
+  registerIpcHandlers()
   createWindow()
 
   app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.

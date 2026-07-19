@@ -1,6 +1,6 @@
 {
   "name": "claude-history-viewer",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Local Claude Code conversation history viewer",
   "main": "./out/main/index.js",
   "author": "jeongph",
