@@ -24,8 +24,8 @@ function isNewer(latest: string, current: string): boolean {
 
 let cached: UpdateInfo | null = null
 
-export async function checkForUpdate(): Promise<UpdateInfo> {
-  if (cached) return cached
+export async function checkForUpdate(force = false): Promise<UpdateInfo> {
+  if (cached && !force) return cached
 
   const currentVersion = process.env.CHV_FAKE_VERSION ?? app.getVersion()
   const noUpdate: UpdateInfo = {

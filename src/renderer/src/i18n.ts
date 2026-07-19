@@ -1,0 +1,172 @@
+import type { AppSettings } from '../../shared/types'
+
+export type Lang = 'ko' | 'en'
+
+const ko = {
+  'sidebar.search': '세션 검색 (⌘F)',
+  'sidebar.loading': '불러오는 중…',
+  'sidebar.empty': '~/.claude/projects 에서\n세션을 찾지 못했습니다.',
+  'sidebar.settings': '설정',
+  'session.messages': '메시지 {n}',
+  'empty.title': '왼쪽에서 세션을 선택하세요',
+  'empty.hint': '⌘F 검색 · 클릭으로 열람',
+  'action.resume': '터미널에서 이어가기',
+  'action.resume.hint': '터미널에서 이 세션을 이어서 연다',
+  'action.fork': 'Fork로 열기',
+  'action.fork.hint': '새 세션 ID로 분기해 연다',
+  'action.reveal': 'Finder',
+  'action.reveal.hint': 'Finder에서 세션 파일 표시',
+  'action.delete': '삭제',
+  'header.subagentHidden': '서브에이전트 {n}건 숨김',
+  'conversation.loading': '대화를 불러오는 중…',
+  'conversation.empty': '표시할 메시지가 없습니다.',
+  'thinking.label': '사고 과정',
+  'tool.input': '입력',
+  'tool.result': '결과',
+  'tool.error': '오류',
+  'tool.noResult': '기록된 결과가 없습니다.',
+  'tool.truncated': '… (이하 생략)',
+  'tool.todo': '할 일 목록 갱신',
+  'meta.output': '커맨드 출력',
+  'meta.context': '시스템 컨텍스트',
+  'image.attachment': '첨부 이미지 {n}',
+  'delete.title': '세션 삭제',
+  'delete.body': '"{title}" 세션 파일을 휴지통으로 이동합니다. 휴지통에서 복구할 수 있습니다.',
+  'delete.confirm': '휴지통으로 이동',
+  'common.cancel': '취소',
+  'common.close': '닫기',
+  'toast.resume': '터미널에서 세션을 엽니다',
+  'toast.fork': '터미널에서 fork 세션을 엽니다',
+  'toast.actionFailed': '실행 실패: {error}',
+  'toast.deleteFailed': '삭제 실패: {error}',
+  'toast.deleted': '세션을 휴지통으로 이동했습니다',
+  'toast.unknownError': '알 수 없는 오류',
+  'update.banner': '새 버전 {v} 이 나왔습니다',
+  'update.download': '다운로드',
+  'settings.title': '설정',
+  'settings.general': '일반',
+  'settings.language': '언어',
+  'settings.language.auto': '자동 (시스템)',
+  'settings.terminal': '터미널',
+  'settings.terminal.hint': '이어가기 · Fork로 열기가 사용할 터미널을 선택합니다.',
+  'settings.terminal.auto': '자동',
+  'settings.terminal.autoDesc': 'OS 기본 터미널 ({name})',
+  'settings.viewer': '뷰어',
+  'settings.fontScale': '본문 글자 크기',
+  'settings.fontScale.small': '작게',
+  'settings.fontScale.normal': '보통',
+  'settings.fontScale.large': '크게',
+  'settings.expandThinking': '사고 과정 기본 펼치기',
+  'settings.expandThinking.hint': '대화를 열 때 사고 과정 블록을 펼친 상태로 표시합니다.',
+  'settings.showMeta': '시스템 메시지 표시',
+  'settings.showMeta.hint': '커맨드 출력·주입 컨텍스트 등 시스템성 항목을 타임라인에 표시합니다.',
+  'settings.updates': '업데이트',
+  'settings.currentVersion': '현재 버전',
+  'settings.checkOnLaunch': '시작 시 자동 확인',
+  'settings.checkNow': '지금 확인',
+  'settings.checking': '확인 중…',
+  'settings.upToDate': '최신 버전입니다',
+  'settings.updateAvailable': '새 버전 {v} 사용 가능',
+  'settings.checkFailed': '확인에 실패했습니다. 네트워크를 확인해주세요.',
+  'time.now': '방금',
+  'time.minutes': '{n}분 전',
+  'time.hours': '{n}시간 전',
+  'time.yesterday': '어제',
+  'time.days': '{n}일 전'
+}
+
+const en: Record<MessageKey, string> = {
+  'sidebar.search': 'Search sessions (⌘F)',
+  'sidebar.loading': 'Loading…',
+  'sidebar.empty': 'No sessions found in\n~/.claude/projects.',
+  'sidebar.settings': 'Settings',
+  'session.messages': '{n} messages',
+  'empty.title': 'Select a session from the sidebar',
+  'empty.hint': '⌘F to search · click to read',
+  'action.resume': 'Resume in terminal',
+  'action.resume.hint': 'Reopen this session in a terminal',
+  'action.fork': 'Open as fork',
+  'action.fork.hint': 'Branch off with a new session ID',
+  'action.reveal': 'Finder',
+  'action.reveal.hint': 'Reveal the session file in Finder',
+  'action.delete': 'Delete',
+  'header.subagentHidden': '{n} subagent items hidden',
+  'conversation.loading': 'Loading conversation…',
+  'conversation.empty': 'No messages to display.',
+  'thinking.label': 'Thinking',
+  'tool.input': 'Input',
+  'tool.result': 'Result',
+  'tool.error': 'Error',
+  'tool.noResult': 'No result recorded.',
+  'tool.truncated': '… (truncated)',
+  'tool.todo': 'Update todo list',
+  'meta.output': 'Command output',
+  'meta.context': 'System context',
+  'image.attachment': 'Attached image {n}',
+  'delete.title': 'Delete session',
+  'delete.body': 'Move the session "{title}" to the Trash. You can restore it from the Trash.',
+  'delete.confirm': 'Move to Trash',
+  'common.cancel': 'Cancel',
+  'common.close': 'Close',
+  'toast.resume': 'Opening session in terminal',
+  'toast.fork': 'Opening forked session in terminal',
+  'toast.actionFailed': 'Failed: {error}',
+  'toast.deleteFailed': 'Delete failed: {error}',
+  'toast.deleted': 'Session moved to Trash',
+  'toast.unknownError': 'unknown error',
+  'update.banner': 'New version {v} is available',
+  'update.download': 'Download',
+  'settings.title': 'Settings',
+  'settings.general': 'General',
+  'settings.language': 'Language',
+  'settings.language.auto': 'Auto (system)',
+  'settings.terminal': 'Terminal',
+  'settings.terminal.hint': 'Terminal used by Resume and Open as fork.',
+  'settings.terminal.auto': 'Auto',
+  'settings.terminal.autoDesc': 'OS default terminal ({name})',
+  'settings.viewer': 'Viewer',
+  'settings.fontScale': 'Text size',
+  'settings.fontScale.small': 'Small',
+  'settings.fontScale.normal': 'Normal',
+  'settings.fontScale.large': 'Large',
+  'settings.expandThinking': 'Expand thinking by default',
+  'settings.expandThinking.hint': 'Show thinking blocks expanded when opening a conversation.',
+  'settings.showMeta': 'Show system messages',
+  'settings.showMeta.hint': 'Show command output and injected context in the timeline.',
+  'settings.updates': 'Updates',
+  'settings.currentVersion': 'Current version',
+  'settings.checkOnLaunch': 'Check on launch',
+  'settings.checkNow': 'Check now',
+  'settings.checking': 'Checking…',
+  'settings.upToDate': 'You are up to date',
+  'settings.updateAvailable': 'Version {v} available',
+  'settings.checkFailed': 'Check failed. Please verify your network.',
+  'time.now': 'just now',
+  'time.minutes': '{n}m ago',
+  'time.hours': '{n}h ago',
+  'time.yesterday': 'yesterday',
+  'time.days': '{n}d ago'
+}
+
+export type MessageKey = keyof typeof ko
+
+const dictionaries: Record<Lang, Record<MessageKey, string>> = { ko, en }
+
+export function resolveLanguage(setting: AppSettings['language']): Lang {
+  if (setting === 'ko' || setting === 'en') return setting
+  return navigator.language?.toLowerCase().startsWith('ko') ? 'ko' : 'en'
+}
+
+export type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string
+
+export function makeTranslate(lang: Lang): Translate {
+  return (key, vars) => {
+    let message = dictionaries[lang][key] ?? key
+    if (vars) {
+      for (const [name, value] of Object.entries(vars)) {
+        message = message.replaceAll(`{${name}}`, String(value))
+      }
+    }
+    return message
+  }
+}

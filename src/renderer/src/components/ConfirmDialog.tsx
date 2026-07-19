@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import { usePrefs } from '../prefs'
 
 interface Props {
   title: string
@@ -15,6 +16,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel
 }: Props): ReactElement {
+  const { t } = usePrefs()
   return (
     <div className="dialog-overlay" role="dialog" aria-modal="true" onClick={onCancel}>
       <div className="dialog" onClick={(event) => event.stopPropagation()}>
@@ -22,7 +24,7 @@ export function ConfirmDialog({
         <p>{body}</p>
         <div className="dialog__actions">
           <button className="btn" onClick={onCancel} autoFocus>
-            취소
+            {t('common.cancel')}
           </button>
           <button className="btn btn--danger" onClick={onConfirm}>
             {confirmLabel}

@@ -1,6 +1,7 @@
 import type { ReactElement, RefObject } from 'react'
 import type { ProjectInfo, SessionMeta } from '../../../shared/types'
 import { formatRelativeTime, shortenPath } from '../lib/format'
+import { usePrefs } from '../prefs'
 
 interface Props {
   projects: ProjectInfo[]
@@ -35,6 +36,7 @@ export function Sidebar({
   onSelectSession,
   onOpenSettings
 }: Props): ReactElement {
+  const { t } = usePrefs()
   const searching = query.trim().length > 0
 
   return (
@@ -44,8 +46,8 @@ export function Sidebar({
         <button
           className="sidebar__settings"
           onClick={onOpenSettings}
-          title="설정"
-          aria-label="설정"
+          title={`${t('sidebar.settings')} (⌘,)`}
+          aria-label={t('sidebar.settings')}
         >
           ⚙
         </button>
@@ -54,7 +56,7 @@ export function Sidebar({
         <input
           ref={searchRef}
           type="search"
-          placeholder="세션 검색 (⌘F)"
+          placeholder={t('sidebar.search')}
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           spellCheck={false}
@@ -84,7 +86,9 @@ export function Sidebar({
               )}
               {isOpen && (
                 <ul className="session-list">
-                  {visible === undefined && <li className="session-list__loading">불러오는 중…</li>}
+                  {visible === undefined && (
+                    <li className="session-list__loading">{t('sidebar.loading')}</li>
+                  )}
                   {visible?.map((session) => (
                     <li key={session.id}>
                       <button
@@ -93,7 +97,8 @@ export function Sidebar({
                       >
                         <span className="session__title">{session.title}</span>
                         <span className="session__meta">
-                          {formatRelativeTime(session.updatedAt)} · 메시지 {session.messageCount}
+                          {formatRelativeTime(session.updatedAt, t)} ·{' '}
+                          {t('session.messages', { n: session.messageCount })}
                         </span>
                       </button>
                     </li>
@@ -103,13 +108,7 @@ export function Sidebar({
             </section>
           )
         })}
-        {projects.length === 0 && (
-          <p className="sidebar__empty">
-            ~/.claude/projects 에서
-            <br />
-            세션을 찾지 못했습니다.
-          </p>
-        )}
+        {projects.length === 0 && <p className="sidebar__empty">{t('sidebar.empty')}</p>}
       </nav>
     </aside>
   )

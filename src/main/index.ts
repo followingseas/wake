@@ -30,10 +30,10 @@ function registerIpcHandlers(): void {
   ipcMain.handle('shell:openExternal', (_event, url: string) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url)
   })
-  ipcMain.handle('update:check', () => checkForUpdate())
+  ipcMain.handle('update:check', (_event, force?: boolean) => checkForUpdate(force === true))
   ipcMain.handle('settings:get', () => settingsInfo())
-  ipcMain.handle('settings:save', (_event, settings: AppSettings) => {
-    saveSettings({ terminal: typeof settings?.terminal === 'string' ? settings.terminal : 'auto' })
+  ipcMain.handle('settings:save', (_event, settings: Partial<AppSettings>) => {
+    saveSettings(settings && typeof settings === 'object' ? settings : {})
     return settingsInfo()
   })
 }

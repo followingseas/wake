@@ -40,7 +40,9 @@ export interface UserImage {
 }
 
 export interface UserMetaInfo {
-  label: string
+  /** 'command'는 label에 커맨드명이 들어가고, 나머지는 kind 기반 번역 라벨을 쓴다 */
+  kind: 'command' | 'output' | 'context' | 'injected'
+  label: string | null
   detail: string | null
 }
 
@@ -80,6 +82,12 @@ export interface TerminalOption {
 export interface AppSettings {
   /** 'auto'면 OS 기본 터미널을 사용한다 */
   terminal: string
+  /** 'auto'면 시스템 언어를 따른다 */
+  language: 'auto' | 'ko' | 'en'
+  fontScale: 'small' | 'normal' | 'large'
+  expandThinking: boolean
+  showMeta: boolean
+  checkUpdatesOnLaunch: boolean
 }
 
 export interface SettingsInfo {
@@ -104,6 +112,6 @@ export interface ClaudeHistoryApi {
   revealSession: (filePath: string) => Promise<ActionResult>
   openExternal: (url: string) => Promise<void>
   getSettings: () => Promise<SettingsInfo>
-  saveSettings: (settings: AppSettings) => Promise<SettingsInfo>
-  checkForUpdate: () => Promise<UpdateInfo>
+  saveSettings: (settings: Partial<AppSettings>) => Promise<SettingsInfo>
+  checkForUpdate: (force?: boolean) => Promise<UpdateInfo>
 }

@@ -12,7 +12,7 @@ const api: ClaudeHistoryApi = {
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
-  checkForUpdate: () => ipcRenderer.invoke('update:check')
+  checkForUpdate: (force) => ipcRenderer.invoke('update:check', force)
 }
 
 if (process.contextIsolated) {
