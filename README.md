@@ -30,8 +30,8 @@
 ### 개발 모드로 실행
 
 ```bash
-git clone https://github.com/jeongph/claude-history-viewer.git
-cd claude-history-viewer
+git clone https://github.com/jeongph/wake.git
+cd wake
 npm install
 npm run dev
 ```
