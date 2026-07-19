@@ -87,6 +87,13 @@ export interface SettingsInfo {
   terminals: TerminalOption[]
 }
 
+export interface UpdateInfo {
+  currentVersion: string
+  latestVersion: string | null
+  hasUpdate: boolean
+  url: string
+}
+
 export interface ClaudeHistoryApi {
   listProjects: () => Promise<ProjectInfo[]>
   listSessions: (projectId: string) => Promise<SessionMeta[]>
@@ -98,4 +105,5 @@ export interface ClaudeHistoryApi {
   openExternal: (url: string) => Promise<void>
   getSettings: () => Promise<SettingsInfo>
   saveSettings: (settings: AppSettings) => Promise<SettingsInfo>
+  checkForUpdate: () => Promise<UpdateInfo>
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
-import type { Conversation, ProjectInfo, SessionMeta } from '../../shared/types'
+import type { Conversation, ProjectInfo, SessionMeta, UpdateInfo } from '../../shared/types'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
 import { ConfirmDialog } from './components/ConfirmDialog'
@@ -15,6 +15,7 @@ export default function App(): ReactElement {
   const [query, setQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [update, setUpdate] = useState<UpdateInfo | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
@@ -49,6 +50,12 @@ export default function App(): ReactElement {
     if (!query.trim()) return
     for (const project of projects) loadSessions(project.id)
   }, [query, projects, loadSessions])
+
+  useEffect(() => {
+    window.api.checkForUpdate().then((info) => {
+      if (info.hasUpdate) setUpdate(info)
+    })
+  }, [])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -184,6 +191,29 @@ export default function App(): ReactElement {
             showToast('설정을 저장했습니다')
           }}
         />
+      )}
+      {update && (
+        <div className="update-banner" role="status">
+          <span className="update-banner__text">
+            새 버전 <strong>v{update.latestVersion}</strong> 이 나왔습니다
+          </span>
+          <button
+            className="btn btn--primary"
+            onClick={() => {
+              window.api.openExternal(update.url)
+              setUpdate(null)
+            }}
+          >
+            다운로드
+          </button>
+          <button
+            className="update-banner__close"
+            onClick={() => setUpdate(null)}
+            aria-label="닫기"
+          >
+            ×
+          </button>
+        </div>
       )}
       {toast && <div className="toast">{toast}</div>}
     </div>

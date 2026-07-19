@@ -11,7 +11,8 @@ const api: ClaudeHistoryApi = {
   revealSession: (filePath) => ipcRenderer.invoke('session:reveal', filePath),
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   getSettings: () => ipcRenderer.invoke('settings:get'),
-  saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings)
+  saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
+  checkForUpdate: () => ipcRenderer.invoke('update:check')
 }
 
 if (process.contextIsolated) {

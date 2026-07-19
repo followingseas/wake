@@ -8,6 +8,7 @@ import { parseConversation } from './lib/parser'
 import { deleteSession, forkSession, resumeSession, revealSession } from './lib/actions'
 import { loadSettings, saveSettings } from './lib/settings'
 import { listTerminals } from './lib/terminals'
+import { checkForUpdate } from './lib/updater'
 import type { AppSettings, SettingsInfo } from '../shared/types'
 
 function settingsInfo(): SettingsInfo {
@@ -29,6 +30,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle('shell:openExternal', (_event, url: string) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url)
   })
+  ipcMain.handle('update:check', () => checkForUpdate())
   ipcMain.handle('settings:get', () => settingsInfo())
   ipcMain.handle('settings:save', (_event, settings: AppSettings) => {
     saveSettings({ terminal: typeof settings?.terminal === 'string' ? settings.terminal : 'auto' })
