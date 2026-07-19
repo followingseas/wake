@@ -1,7 +1,7 @@
 {
   "name": "claude-history-viewer",
   "version": "0.1.0",
-  "description": "Local Claude Code conversation history viewer",
+  "description": "Wake — trace the wake of your Claude Code sessions. A local conversation history viewer.",
   "main": "./out/main/index.js",
   "author": "jeongph",
   "homepage": "https://github.com/jeongph/claude-history-viewer",

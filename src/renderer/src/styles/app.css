@@ -960,6 +960,82 @@ button {
   background: transparent;
 }
 
+/* ── 설정 ────────────────────────────────────────────────────── */
+.sidebar__titlebar {
+  justify-content: space-between;
+  padding-right: 10px;
+}
+
+.sidebar__settings {
+  -webkit-app-region: no-drag;
+  font-size: 13px;
+  color: var(--text-3);
+  padding: 3px 7px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.sidebar__settings:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.dialog--settings {
+  width: 420px;
+}
+
+.settings-section h3 {
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.settings-section__hint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+
+.settings-options {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-option {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.settings-option:hover {
+  background: var(--surface-hover);
+}
+
+.settings-option:has(input:checked) {
+  border-color: color-mix(in srgb, var(--copper) 55%, transparent);
+  background: var(--copper-soft);
+}
+
+.settings-option input {
+  accent-color: var(--copper);
+}
+
+.settings-option__label {
+  font-weight: 500;
+}
+
+.settings-option__desc {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;

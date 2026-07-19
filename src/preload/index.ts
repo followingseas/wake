@@ -9,7 +9,9 @@ const api: ClaudeHistoryApi = {
   forkSession: (sessionId, cwd) => ipcRenderer.invoke('session:fork', sessionId, cwd),
   deleteSession: (filePath) => ipcRenderer.invoke('session:delete', filePath),
   revealSession: (filePath) => ipcRenderer.invoke('session:reveal', filePath),
-  openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url)
+  openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings)
 }
 
 if (process.contextIsolated) {

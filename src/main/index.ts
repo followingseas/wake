@@ -6,6 +6,13 @@ import icon from '../../resources/icon.png?asset'
 import { listProjects, listSessions } from './lib/scanner'
 import { parseConversation } from './lib/parser'
 import { deleteSession, forkSession, resumeSession, revealSession } from './lib/actions'
+import { loadSettings, saveSettings } from './lib/settings'
+import { listTerminals } from './lib/terminals'
+import type { AppSettings, SettingsInfo } from '../shared/types'
+
+function settingsInfo(): SettingsInfo {
+  return { settings: loadSettings(), terminals: listTerminals() }
+}
 
 function registerIpcHandlers(): void {
   ipcMain.handle('projects:list', () => listProjects())
@@ -21,6 +28,11 @@ function registerIpcHandlers(): void {
   ipcMain.handle('session:reveal', (_event, filePath: string) => revealSession(filePath))
   ipcMain.handle('shell:openExternal', (_event, url: string) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url)
+  })
+  ipcMain.handle('settings:get', () => settingsInfo())
+  ipcMain.handle('settings:save', (_event, settings: AppSettings) => {
+    saveSettings({ terminal: typeof settings?.terminal === 'string' ? settings.terminal : 'auto' })
+    return settingsInfo()
   })
 }
 
