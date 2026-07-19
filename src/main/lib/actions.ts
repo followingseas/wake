@@ -1,7 +1,7 @@
 import { execFile } from 'child_process'
 import { existsSync } from 'fs'
 import { homedir } from 'os'
-import { resolve, sep } from 'path'
+import { join, resolve, sep } from 'path'
 import { shell } from 'electron'
 import type { ActionResult } from '../../shared/types'
 import { projectsRoot } from './scanner'
@@ -19,20 +19,49 @@ function escapeForShell(text: string): string {
   return `'${text.replace(/'/g, `'\\''`)}'`
 }
 
-function runInTerminal(command: string): Promise<ActionResult> {
-  const script = [
+function isITermInstalled(): boolean {
+  return (
+    existsSync('/Applications/iTerm.app') || existsSync(join(homedir(), 'Applications/iTerm.app'))
+  )
+}
+
+function buildITermScript(command: string): string {
+  return [
+    'tell application "iTerm"',
+    'activate',
+    'set newWindow to (create window with default profile)',
+    'tell current session of newWindow',
+    `write text "${escapeForAppleScript(command)}"`,
+    'end tell',
+    'end tell'
+  ].join('\n')
+}
+
+function buildTerminalScript(command: string): string {
+  return [
     'tell application "Terminal"',
     'activate',
     `do script "${escapeForAppleScript(command)}"`,
     'end tell'
   ].join('\n')
+}
 
+function runOsascript(script: string): Promise<ActionResult> {
   return new Promise((resolve) => {
     execFile('osascript', ['-e', script], (error) => {
       if (error) resolve({ ok: false, error: error.message })
       else resolve({ ok: true })
     })
   })
+}
+
+async function runInTerminal(command: string): Promise<ActionResult> {
+  // iTerm이 설치되어 있으면 우선 사용하고, 실패하면 기본 Terminal.app으로 폴백한다
+  if (isITermInstalled()) {
+    const result = await runOsascript(buildITermScript(command))
+    if (result.ok) return result
+  }
+  return runOsascript(buildTerminalScript(command))
 }
 
 const SESSION_ID_RE = /^[a-zA-Z0-9-]{1,64}$/
