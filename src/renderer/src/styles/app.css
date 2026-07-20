@@ -863,10 +863,10 @@ button {
 }
 
 .empty-state__mark {
-  font-family: var(--font-mono);
-  font-size: 34px;
-  color: var(--accent);
-  opacity: 0.5;
+  display: flex;
+  justify-content: center;
+  opacity: 0.55;
+  margin-bottom: 6px;
 }
 
 .empty-state__hint {
