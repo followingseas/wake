@@ -6,7 +6,8 @@ import { forEachJsonlLine, readHead } from './jsonl'
 import { getMessage, isRealUserPrompt, summarize } from './entries'
 
 export function projectsRoot(): string {
-  return join(homedir(), '.claude', 'projects')
+  // CHV_DATA_DIR: 개발·데모용 데이터 디렉토리 오버라이드
+  return process.env.CHV_DATA_DIR ?? join(homedir(), '.claude', 'projects')
 }
 
 async function detectRealPath(sessionFiles: string[]): Promise<string | null> {
