@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src=".github/assets/logo.svg" width="110" alt="Wake 로고 — 파도 마루의 뱃머리와 W를 그리는 한 획의 물결" />
+<img src="assets/logo.svg" width="110" alt="Wake 로고 — 파도 마루의 뱃머리와 W를 그리는 한 획의 물결" />
 
 # Wake
 

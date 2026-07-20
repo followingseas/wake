@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src=".github/assets/logo.svg" width="110" alt="Wake logo — a prow riding the crest of a W-shaped wave" />
+<img src="assets/logo.svg" width="110" alt="Wake logo — a prow riding the crest of a W-shaped wave" />
 
 # Wake
 
