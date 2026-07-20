@@ -2,8 +2,8 @@ import { app } from 'electron'
 import type { UpdateInfo } from '../../shared/types'
 
 // TODO: 2026-07-19 서명·공증 도입 후 electron-updater 기반 자동 업데이트로 전환
-const LATEST_RELEASE_API = 'https://api.github.com/repos/jeongph/wake/releases/latest'
-const RELEASES_PAGE = 'https://github.com/jeongph/wake/releases/latest'
+const LATEST_RELEASE_API = 'https://api.github.com/repos/followingseas/wake/releases/latest'
+const RELEASES_PAGE = 'https://github.com/followingseas/wake/releases/latest'
 
 function parseVersion(version: string): number[] {
   return version
