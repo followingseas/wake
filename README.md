@@ -1,39 +1,54 @@
+<div align="center">
+
+<img src="https://github.com/followingseas.png" width="88" alt="followingseas" />
+
 # Wake
 
-> **Trace the wake of your Claude Code sessions.**
+**Trace the wake of your Claude Code sessions.**
+
+Claude Code가 로컬에 남긴 대화의 항적을 따라 — 읽고, 이어가고, 분기하세요.
+
+[![Release](https://img.shields.io/github/v/release/followingseas/wake?color=56B7C3&label=release)](https://github.com/followingseas/wake/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/followingseas/wake/total?color=1F7A93&label=downloads)](https://github.com/followingseas/wake/releases)
+[![License](https://img.shields.io/badge/license-MIT-0B1F2A)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-macOS-E8F6F2)](https://github.com/followingseas/wake/releases/latest)
+[![Conventional Commits](https://img.shields.io/badge/commits-conventional-56B7C3)](https://www.conventionalcommits.org/ko/v1.0.0/)
+
+<img src=".github/assets/hero.png" width="820" alt="Wake 대화 뷰어 화면" />
+
+</div>
+
+---
 
 배가 지나간 자리에 남는 물살의 흔적을 wake(항적)라고 부릅니다. Claude Code와의 모든 대화도 로컬 `~/.claude` 디렉토리에 항적을 남깁니다. **Wake는 그 흔적을 따라가는 데스크톱 뷰어입니다** — 지난 세션을 읽기 좋은 문서로 열람하고, 멈춘 지점에서 다시 이어가고, 새로운 항로로 분기(fork)할 수 있습니다.
 
-모든 동작은 로컬 파일 시스템 안에서만 이루어집니다. 네트워크 요청을 보내지 않으며, 대화 기록을 외부로 전송하지 않습니다.
+모든 동작은 로컬 파일 시스템 안에서만 이루어집니다. 네트워크 요청은 업데이트 확인(GitHub Releases 조회)뿐이며, 대화 기록을 외부로 전송하지 않습니다.
 
 ## 주요 기능
 
-- **세션 탐색** — 프로젝트별로 정리된 세션 목록을 제공합니다. 세션 제목, 마지막 활동 시각, 메시지 수를 표시하며 `⌘F`(Windows/Linux: `Ctrl+F`)로 전체 세션을 검색할 수 있습니다.
-- **대화 열람** — 사용자 입력은 터미널 프롬프트 형태로, 응답은 마크다운(표·코드 하이라이트 포함)으로 조판해 표시합니다. 도구 호출·사고 과정·시스템 메시지는 접힌 상태로 정리되어 대화의 흐름을 방해하지 않습니다.
-- **터미널에서 이어가기** — 세션의 작업 디렉토리에서 `claude --resume <sessionId>`를 실행해 대화를 이어갑니다.
-- **Fork로 열기** — `--fork-session` 플래그로 원본을 보존한 채 새 세션으로 분기합니다.
-- **터미널 선택** — 기본값은 OS 기본 터미널이며, 설정(사이드바의 ⚙)에서 감지된 터미널 중 원하는 것을 선택할 수 있습니다.
-- **세션 삭제** — 세션 파일을 휴지통으로 이동합니다. 영구 삭제가 아니므로 휴지통에서 복구할 수 있습니다.
+- **📜 대화 열람** — 사용자 입력은 터미널 프롬프트 형태로, 응답은 마크다운(표·코드 하이라이트 포함)으로 조판해 표시합니다. 도구 호출·사고 과정·시스템 메시지는 접힌 상태로 정리되어 대화의 흐름을 방해하지 않습니다.
+- **🔍 세션 탐색** — 프로젝트별로 정리된 세션 목록과 `⌘F` 검색. 세션 제목·마지막 활동·메시지 수를 한눈에 봅니다.
+- **⏩ 터미널에서 이어가기** — 세션의 원래 작업 디렉토리에서 `claude --resume`을 실행해 대화를 이어갑니다.
+- **🔱 Fork로 열기** — `--fork-session`으로 원본을 보존한 채 새 세션으로 분기합니다.
+- **🖥 터미널 선택** — 기본값은 OS 기본 터미널. 설정에서 iTerm2 등 감지된 터미널을 선택할 수 있습니다.
+- **🗑 안전한 삭제** — 세션 파일을 휴지통으로 이동합니다. 언제든 복구할 수 있습니다.
+- **🌐 다국어** — 한국어 · English (시스템 언어 자동 감지)
 
-## 요구 사항
+<div align="center">
+<img src=".github/assets/settings.png" width="680" alt="Wake 설정 화면" />
+</div>
 
-| 항목 | 내용 |
-|------|------|
-| OS | macOS · Windows · Linux |
-| Node.js | 20 이상 (소스 실행/빌드 시) |
-| Claude Code CLI | `claude` 명령이 PATH에 있어야 함 (이어가기/Fork 기능) |
-
-> 뷰어 기능은 모든 OS에서 동작합니다. 터미널 연동은 macOS(Terminal.app, iTerm2)에서 검증되었으며, Windows(Windows Terminal, cmd, PowerShell)와 Linux(GNOME Terminal, Konsole 등)는 구현되어 있으나 검증 범위가 제한적입니다. 문제가 있다면 이슈로 알려주십시오.
-
-## 설치 및 실행
+## 설치
 
 ### 다운로드 (권장)
 
-[Releases](https://github.com/followingseas/wake/releases)에서 최신 `.dmg`를 다운로드해 마운트한 뒤, `Wake.app`을 Applications 폴더로 옮기면 설치가 끝납니다. 현재 macOS(Apple Silicon) 빌드를 제공합니다.
+[**최신 릴리스 다운로드 →**](https://github.com/followingseas/wake/releases/latest)
+
+`.dmg`를 마운트한 뒤 `Wake.app`을 Applications 폴더로 옮기면 설치가 끝납니다. 현재 macOS(Apple Silicon) 빌드를 제공합니다.
 
 > 서명·공증되지 않은 빌드이므로 첫 실행 시 Gatekeeper 경고가 표시됩니다. 시스템 설정 → 개인정보 보호 및 보안에서 "그래도 열기"를 눌러 허용하십시오.
 
-### 개발 모드로 실행
+### 소스에서 실행
 
 ```bash
 git clone https://github.com/followingseas/wake.git
@@ -42,7 +57,7 @@ npm install
 npm run dev
 ```
 
-### 앱으로 빌드
+앱으로 빌드하려면:
 
 ```bash
 npm run build:mac     # macOS (.dmg)
@@ -50,18 +65,24 @@ npm run build:win     # Windows (설치형 .exe)
 npm run build:linux   # Linux (AppImage, deb)
 ```
 
-빌드가 완료되면 `dist/` 디렉토리에 설치 파일이 생성됩니다. macOS는 `.dmg` 마운트 후 `Wake.app`을 Applications 폴더로 옮기면 설치가 끝납니다.
+| 요구 사항 | 내용 |
+|------|------|
+| OS | macOS · Windows · Linux |
+| Node.js | 20 이상 (소스 실행/빌드 시) |
+| Claude Code CLI | `claude` 명령이 PATH에 있어야 함 (이어가기/Fork 기능) |
 
-> 코드 서명 없이 빌드되므로, 처음 실행할 때 OS 보안 경고가 표시될 수 있습니다. macOS는 시스템 설정 → 개인정보 보호 및 보안에서 실행을 허용하십시오.
+> 뷰어 기능은 모든 OS에서 동작합니다. 터미널 연동은 macOS(Terminal.app, iTerm2)에서 검증되었으며, Windows(Windows Terminal, cmd, PowerShell)와 Linux(GNOME Terminal, Konsole 등)는 구현되어 있으나 검증 범위가 제한적입니다. 문제가 있다면 이슈로 알려주십시오.
 
 ## 사용법
 
-1. **세션 선택** — 왼쪽 사이드바에서 프로젝트를 펼치고 세션을 클릭합니다. 프로젝트는 최근 활동 순으로 정렬됩니다.
-2. **대화 읽기** — 본문에서 도구 호출(`▸ Bash …`)이나 `사고 과정` 줄을 클릭하면 상세 내용이 펼쳐집니다.
-3. **이어가기 / Fork** — 상단의 **터미널에서 이어가기** 버튼은 해당 세션을 그대로 재개하고, **Fork로 열기** 버튼은 새 세션 ID로 분기합니다. 두 경우 모두 터미널이 세션의 원래 작업 디렉토리에서 열립니다.
-4. **터미널 변경** — 사이드바 상단의 ⚙ 버튼에서 세션을 열 터미널을 선택합니다. 기본값(자동)은 OS 기본 터미널입니다.
-5. **삭제** — **삭제** 버튼을 누르면 확인 후 세션 파일을 휴지통으로 이동합니다.
-6. **검색** — `⌘F`를 누르면 검색창에 포커스가 이동하며, 세션 제목과 첫 메시지를 대상으로 필터링합니다.
+| 동작 | 방법 |
+|------|------|
+| 세션 열람 | 사이드바에서 프로젝트 펼침 → 세션 클릭 |
+| 상세 펼치기 | 본문의 도구 호출(`▸ Bash …`)·`사고 과정` 줄 클릭 |
+| 이어가기 / Fork | 상단 **터미널에서 이어가기** / **Fork로 열기** 버튼 |
+| 검색 | `⌘F` — 세션 제목·첫 메시지 대상 |
+| 설정 | `⌘,` 또는 사이드바 ⚙ — 언어·터미널·글자 크기·업데이트 |
+| 삭제 | **삭제** 버튼 → 확인 후 휴지통 이동 |
 
 ## 데이터 처리 방식
 
@@ -86,6 +107,8 @@ npm run build      # 타입 검사 + 프로덕션 빌드
 
 기술 스택: Electron · electron-vite · React · TypeScript · react-markdown
 
+커밋 메시지는 [Conventional Commits](https://www.conventionalcommits.org/ko/v1.0.0/)를 따르며 commitlint로 검사됩니다.
+
 ## 라이선스
 
-[MIT](LICENSE)
+[MIT](LICENSE) © [followingseas](https://github.com/followingseas)
