@@ -1,4 +1,4 @@
-appId: com.jeongph.wake
+appId: com.followingseas.wake
 productName: Wake
 directories:
   buildResources: build
@@ -28,7 +28,7 @@ linux:
   target:
     - AppImage
     - deb
-  maintainer: jeongph
+  maintainer: followingseas
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
