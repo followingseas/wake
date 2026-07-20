@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <!-- Concept B: W 파형 모노그램 — Wake의 W를 하나의 물결로 -->
+  <!-- b2-prow-crest: 파도 마루에 올라탄 뱃머리 — W의 가운데 꼭짓점 위에서 진행 방향으로 -->
   <defs>
     <linearGradient id="w" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#7FD1DB"/>
@@ -7,6 +7,7 @@
       <stop offset="1" stop-color="#1F7A93"/>
     </linearGradient>
   </defs>
-  <path d="M 92 178 C 108 260 128 338 178 338 C 222 338 238 246 256 212 C 274 246 290 338 334 338 C 384 338 404 260 420 178"
-        stroke="url(#w)" stroke-width="58" stroke-linecap="round" fill="none"/>
+  <path d="M 104 214 C 118 286 136 354 182 354 C 222 354 238 270 256 240 C 274 270 290 354 330 354 C 376 354 394 286 408 214"
+        stroke="url(#w)" stroke-width="54" stroke-linecap="round"/>
+  <path d="M 234 122 L 278 152 L 234 182" stroke="#7FD1DB" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
