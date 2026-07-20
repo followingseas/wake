@@ -12,6 +12,7 @@ import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { SettingsDialog } from './components/SettingsDialog'
+import { WakeMark } from './components/WakeMark'
 
 export default function App(): ReactElement {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
@@ -201,7 +202,9 @@ export default function App(): ReactElement {
         ) : (
           <main className="conversation conversation--empty">
             <div className="empty-state">
-              <p className="empty-state__mark">❯</p>
+              <div className="empty-state__mark">
+                <WakeMark size={84} />
+              </div>
               <p>{t('empty.title')}</p>
               <p className="empty-state__hint">{t('empty.hint')}</p>
             </div>
