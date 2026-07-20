@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/followingseas.png" width="88" alt="followingseas" />
+<img src=".github/assets/logo.svg" width="96" alt="Wake logo — a three-line wake trailing a ship" />
 
 # Wake
 

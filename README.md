@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/followingseas.png" width="88" alt="followingseas" />
+<img src=".github/assets/logo.svg" width="96" alt="Wake 로고 — 배가 남기는 세 갈래 항적" />
 
 # Wake
 
