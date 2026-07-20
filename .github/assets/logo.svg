@@ -1,7 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <!-- Wake mark: 오른쪽으로 나아가는 배와 뒤로 퍼지는 세 갈래 항적 -->
-  <path d="M 358 226 Q 248 208 132 148" stroke="#7FD1DB" stroke-width="34" stroke-linecap="round"/>
-  <path d="M 352 256 Q 236 256 104 256" stroke="#56B7C3" stroke-width="34" stroke-linecap="round"/>
-  <path d="M 358 286 Q 248 304 132 364" stroke="#1F7A93" stroke-width="34" stroke-linecap="round"/>
-  <circle cx="424" cy="256" r="27" fill="#56B7C3"/>
+  <!-- Concept B: W 파형 모노그램 — Wake의 W를 하나의 물결로 -->
+  <defs>
+    <linearGradient id="w" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7FD1DB"/>
+      <stop offset="0.5" stop-color="#56B7C3"/>
+      <stop offset="1" stop-color="#1F7A93"/>
+    </linearGradient>
+  </defs>
+  <path d="M 92 178 C 108 260 128 338 178 338 C 222 338 238 246 256 212 C 274 246 290 338 334 338 C 384 338 404 260 420 178"
+        stroke="url(#w)" stroke-width="58" stroke-linecap="round" fill="none"/>
 </svg>

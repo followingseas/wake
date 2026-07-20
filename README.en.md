@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src=".github/assets/logo.svg" width="96" alt="Wake logo — a three-line wake trailing a ship" />
+<img src=".github/assets/logo.svg" width="110" alt="Wake logo — a W drawn in a single wave stroke" />
 
 # Wake
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src=".github/assets/logo.svg" width="96" alt="Wake 로고 — 배가 남기는 세 갈래 항적" />
+<img src=".github/assets/logo.svg" width="110" alt="Wake 로고 — W를 그리는 한 획의 물결" />
 
 # Wake
 
