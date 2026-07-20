@@ -8,6 +8,7 @@ files:
   - '!docs/*'
   - '!.github/*'
   - '!.husky/*'
+  - '!assets/*'
   - '!{.coderabbit.yaml,commitlint.config.mjs,CLAUDE.md}'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
