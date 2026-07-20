@@ -4,6 +4,8 @@
 
 # Wake
 
+**한국어** · [English](./README.en.md)
+
 **Trace the wake of your Claude Code sessions.**
 
 Claude Code가 로컬에 남긴 대화의 항적을 따라 — 읽고, 이어가고, 분기하세요.
