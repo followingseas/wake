@@ -109,7 +109,7 @@ npm run build      # 타입 검사 + 프로덕션 빌드
 
 기술 스택: Electron · electron-vite · React · TypeScript · react-markdown
 
-커밋 메시지는 [Conventional Commits](https://www.conventionalcommits.org/ko/v1.0.0/)를 따르며 commitlint로 검사됩니다.
+기여 절차와 커밋 규칙은 [기여 안내](https://github.com/followingseas/.github/blob/main/CONTRIBUTING.md)를 참조하십시오. 커밋 형식은 commitlint가 자동으로 검사합니다.
 
 ## 라이선스
 
