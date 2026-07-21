@@ -14,7 +14,6 @@ Claude Code가 로컬에 남긴 대화의 항적을 따라 — 읽고, 이어가
 [![Downloads](https://img.shields.io/github/downloads/followingseas/wake/total?color=1F7A93&label=downloads)](https://github.com/followingseas/wake/releases)
 [![License](https://img.shields.io/badge/license-MIT-0B1F2A)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS-E8F6F2)](https://github.com/followingseas/wake/releases/latest)
-[![Conventional Commits](https://img.shields.io/badge/commits-conventional-56B7C3)](https://www.conventionalcommits.org/ko/v1.0.0/)
 
 <img src=".github/assets/hero.png" width="820" alt="Wake 대화 뷰어 화면" />
 
