@@ -25,7 +25,9 @@ nsis:
   createDesktopShortcut: always
 mac:
   entitlementsInherit: build/entitlements.mac.plist
-  notarize: false
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  notarize: true
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
@@ -37,3 +39,7 @@ linux:
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
+publish:
+  provider: github
+  owner: followingseas
+  repo: wake

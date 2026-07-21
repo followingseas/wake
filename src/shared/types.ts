@@ -100,7 +100,14 @@ export interface UpdateInfo {
   latestVersion: string | null
   hasUpdate: boolean
   url: string
+  /** true면 electron-updater가 다운로드·설치를 관리한다 (배너는 update:event로 구동) */
+  auto: boolean
 }
+
+export type UpdateEvent =
+  | { type: 'downloading'; version: string; percent: number }
+  | { type: 'ready'; version: string }
+  | { type: 'error'; message: string }
 
 export interface ClaudeHistoryApi {
   listProjects: () => Promise<ProjectInfo[]>
@@ -114,4 +121,6 @@ export interface ClaudeHistoryApi {
   getSettings: () => Promise<SettingsInfo>
   saveSettings: (settings: Partial<AppSettings>) => Promise<SettingsInfo>
   checkForUpdate: (force?: boolean) => Promise<UpdateInfo>
+  onUpdateEvent: (callback: (event: UpdateEvent) => void) => () => void
+  installUpdate: () => Promise<void>
 }

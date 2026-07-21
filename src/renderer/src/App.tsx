@@ -6,6 +6,11 @@ import type {
   SessionMeta,
   UpdateInfo
 } from '../../shared/types'
+
+type UpdateBannerState =
+  | { mode: 'link'; version: string; url: string }
+  | { mode: 'downloading'; version: string; percent: number }
+  | { mode: 'ready'; version: string }
 import { makeTranslate, resolveLanguage } from './i18n'
 import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
 import { Sidebar } from './components/Sidebar'
@@ -25,7 +30,7 @@ export default function App(): ReactElement {
   const [query, setQuery] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<SessionMeta | null>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const [update, setUpdate] = useState<UpdateInfo | null>(null)
+  const [update, setUpdate] = useState<UpdateBannerState | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
@@ -59,11 +64,24 @@ export default function App(): ReactElement {
   }, [])
 
   useEffect(() => {
+    // electron-updater 이벤트(다운로드 진행·완료)가 배너 상태를 구동한다
+    const unsubscribe = window.api.onUpdateEvent((event) => {
+      if (event.type === 'downloading') {
+        setUpdate({ mode: 'downloading', version: event.version, percent: event.percent })
+      } else if (event.type === 'ready') {
+        setUpdate({ mode: 'ready', version: event.version })
+      } else if (event.type === 'error') {
+        setUpdate((prev) => (prev?.mode === 'ready' ? prev : null))
+      }
+    })
     window.api.getSettings().then((info) => {
       setSettings(info.settings)
       if (info.settings.checkUpdatesOnLaunch) {
-        window.api.checkForUpdate().then((updateInfo) => {
-          if (updateInfo.hasUpdate) setUpdate(updateInfo)
+        window.api.checkForUpdate().then((updateInfo: UpdateInfo) => {
+          // auto 모드는 이벤트가 배너를 그리므로 링크 배너는 legacy(dev) 경로에서만 띄운다
+          if (updateInfo.hasUpdate && !updateInfo.auto && updateInfo.latestVersion) {
+            setUpdate({ mode: 'link', version: updateInfo.latestVersion, url: updateInfo.url })
+          }
         })
       }
     })
@@ -74,6 +92,7 @@ export default function App(): ReactElement {
         loadSessions(list[0].id)
       }
     })
+    return unsubscribe
   }, [loadSessions])
 
   // 검색 시 아직 안 읽은 프로젝트의 세션 메타를 모두 로드한다
@@ -223,17 +242,27 @@ export default function App(): ReactElement {
         {update && (
           <div className="update-banner" role="status">
             <span className="update-banner__text">
-              {t('update.banner', { v: `v${update.latestVersion}` })}
+              {update.mode === 'link' && t('update.banner', { v: `v${update.version}` })}
+              {update.mode === 'downloading' &&
+                t('update.downloading', { v: `v${update.version}`, p: update.percent })}
+              {update.mode === 'ready' && t('update.ready', { v: `v${update.version}` })}
             </span>
-            <button
-              className="btn btn--primary"
-              onClick={() => {
-                window.api.openExternal(update.url)
-                setUpdate(null)
-              }}
-            >
-              {t('update.download')}
-            </button>
+            {update.mode === 'link' && (
+              <button
+                className="btn btn--primary"
+                onClick={() => {
+                  window.api.openExternal(update.url)
+                  setUpdate(null)
+                }}
+              >
+                {t('update.download')}
+              </button>
+            )}
+            {update.mode === 'ready' && (
+              <button className="btn btn--primary" onClick={() => window.api.installUpdate()}>
+                {t('update.restart')}
+              </button>
+            )}
             <button
               className="update-banner__close"
               onClick={() => setUpdate(null)}

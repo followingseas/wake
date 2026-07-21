@@ -9,6 +9,12 @@ import { deleteSession, forkSession, resumeSession, revealSession } from './lib/
 import { loadSettings, saveSettings } from './lib/settings'
 import { listTerminals } from './lib/terminals'
 import { checkForUpdate } from './lib/updater'
+import {
+  checkViaAutoUpdater,
+  initAutoUpdate,
+  installUpdate,
+  isAutoUpdateSupported
+} from './lib/autoUpdate'
 import type { AppSettings, SettingsInfo } from '../shared/types'
 
 function settingsInfo(): SettingsInfo {
@@ -30,7 +36,10 @@ function registerIpcHandlers(): void {
   ipcMain.handle('shell:openExternal', (_event, url: string) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url)
   })
-  ipcMain.handle('update:check', (_event, force?: boolean) => checkForUpdate(force === true))
+  ipcMain.handle('update:check', (_event, force?: boolean) =>
+    isAutoUpdateSupported() ? checkViaAutoUpdater() : checkForUpdate(force === true)
+  )
+  ipcMain.handle('update:install', () => installUpdate())
   ipcMain.handle('settings:get', () => settingsInfo())
   ipcMain.handle('settings:save', (_event, settings: Partial<AppSettings>) => {
     saveSettings(settings && typeof settings === 'object' ? settings : {})
@@ -54,6 +63,8 @@ function createWindow(): void {
       sandbox: false
     }
   })
+
+  initAutoUpdate(mainWindow)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
