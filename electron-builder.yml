@@ -43,3 +43,4 @@ publish:
   provider: github
   owner: followingseas
   repo: wake
+  releaseType: draft
