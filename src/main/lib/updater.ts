@@ -1,26 +1,10 @@
 import { app } from 'electron'
 import type { UpdateInfo } from '../../shared/types'
+import { isNewer } from './autoUpdate'
 
-// TODO: 2026-07-19 서명·공증 도입 후 electron-updater 기반 자동 업데이트로 전환
+// dev 모드 등 electron-updater를 못 쓰는 환경의 legacy 확인 경로 (다운로드 링크 안내만)
 const LATEST_RELEASE_API = 'https://api.github.com/repos/followingseas/wake/releases/latest'
 const RELEASES_PAGE = 'https://github.com/followingseas/wake/releases/latest'
-
-function parseVersion(version: string): number[] {
-  return version
-    .replace(/^v/, '')
-    .split('.')
-    .map((part) => Number.parseInt(part, 10) || 0)
-}
-
-function isNewer(latest: string, current: string): boolean {
-  const a = parseVersion(latest)
-  const b = parseVersion(current)
-  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
-    const diff = (a[i] ?? 0) - (b[i] ?? 0)
-    if (diff !== 0) return diff > 0
-  }
-  return false
-}
 
 let cached: UpdateInfo | null = null
 
@@ -32,7 +16,8 @@ export async function checkForUpdate(force = false): Promise<UpdateInfo> {
     currentVersion,
     latestVersion: null,
     hasUpdate: false,
-    url: RELEASES_PAGE
+    url: RELEASES_PAGE,
+    auto: false
   }
 
   try {
@@ -49,7 +34,8 @@ export async function checkForUpdate(force = false): Promise<UpdateInfo> {
       currentVersion,
       latestVersion,
       hasUpdate: isNewer(latestVersion, currentVersion),
-      url: release.html_url ?? RELEASES_PAGE
+      url: release.html_url ?? RELEASES_PAGE,
+      auto: false
     }
     return cached
   } catch {

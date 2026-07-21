@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ClaudeHistoryApi } from '../shared/types'
+import type { ClaudeHistoryApi, UpdateEvent } from '../shared/types'
 
 const api: ClaudeHistoryApi = {
   listProjects: () => ipcRenderer.invoke('projects:list'),
@@ -12,7 +12,14 @@ const api: ClaudeHistoryApi = {
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
-  checkForUpdate: (force) => ipcRenderer.invoke('update:check', force)
+  checkForUpdate: (force) => ipcRenderer.invoke('update:check', force),
+  onUpdateEvent: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: UpdateEvent): void =>
+      callback(payload)
+    ipcRenderer.on('update:event', listener)
+    return () => ipcRenderer.removeListener('update:event', listener)
+  },
+  installUpdate: () => ipcRenderer.invoke('update:install')
 }
 
 if (process.contextIsolated) {
