@@ -881,6 +881,8 @@ button {
   align-items: center;
   justify-content: center;
   z-index: 50;
+  /* 아래 깔린 창 드래그 영역(-webkit-app-region: drag)이 클릭을 삼키지 않도록 오버레이 전체를 no-drag로 지정 */
+  -webkit-app-region: no-drag;
 }
 
 .dialog {
@@ -1045,6 +1047,7 @@ button {
 
 /* ── 업데이트 배너 ───────────────────────────────────────────── */
 .update-banner {
+  -webkit-app-region: no-drag;
   position: fixed;
   right: 20px;
   bottom: 20px;
