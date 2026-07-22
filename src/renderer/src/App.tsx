@@ -26,6 +26,7 @@ import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { SettingsDialog } from './components/SettingsDialog'
+import { SidebarExpand } from './components/SidebarExpand'
 import { WakeMark } from './components/WakeMark'
 
 export default function App(): ReactElement {
@@ -259,28 +260,6 @@ export default function App(): ReactElement {
           onCollapseSidebar={toggleSidebar}
           onResizeStart={startSidebarResize}
         />
-        {sidebarCollapsed && (
-          <button
-            className="sidebar-expand"
-            onClick={toggleSidebar}
-            title={t('sidebar.expand')}
-            aria-label={t('sidebar.expand')}
-          >
-            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
-              <rect
-                x="1.5"
-                y="2.5"
-                width="13"
-                height="11"
-                rx="2"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.4"
-              />
-              <line x1="6" y1="2.5" x2="6" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
-            </svg>
-          </button>
-        )}
         {selected ? (
           <ConversationView
             session={selected}
@@ -291,9 +270,11 @@ export default function App(): ReactElement {
             onFork={() => runAction('fork')}
             onDelete={() => setDeleteTarget(selected)}
             onReveal={() => window.api.revealSession(selected.filePath)}
+            onExpandSidebar={sidebarCollapsed ? toggleSidebar : null}
           />
         ) : (
           <main className="conversation conversation--empty">
+            {sidebarCollapsed && <SidebarExpand onClick={toggleSidebar} />}
             <div className="empty-state">
               <div className="empty-state__mark">
                 <WakeMark size={84} />

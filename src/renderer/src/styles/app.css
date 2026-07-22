@@ -1065,14 +1065,12 @@ body.is-resizing {
   display: none;
 }
 
-/* 접힘 상태에서 신호등 오른쪽에 뜨는 펼치기 버튼 */
+/* 접힘 상태의 펼치기 버튼 — 드래그 영역(헤더/빈 화면)의 자식으로 렌더링된다 */
 .sidebar-expand {
-  position: fixed;
-  top: 10px;
-  left: 84px;
-  z-index: 40;
   width: 28px;
   height: 24px;
+  flex-shrink: 0;
+  align-self: center;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1086,8 +1084,18 @@ body.is-resizing {
   background: var(--surface);
 }
 
+.conversation--empty {
+  position: relative;
+}
+
+.conversation--empty .sidebar-expand {
+  position: absolute;
+  top: 10px;
+  left: 84px;
+}
+
 .app.is-sidebar-collapsed .conversation__header {
-  padding-left: 120px;
+  padding-left: 84px; /* macOS 신호등 버튼 자리 */
 }
 
 .dialog--settings {
