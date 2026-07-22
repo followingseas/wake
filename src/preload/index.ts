@@ -24,6 +24,7 @@ const api: ClaudeHistoryApi = {
     ipcRenderer.on('menu:open-settings', listener)
     return () => ipcRenderer.removeListener('menu:open-settings', listener)
   },
+  showSessionMenu: (labels) => ipcRenderer.invoke('session:menu', labels),
   installUpdate: () => ipcRenderer.invoke('update:install')
 }
 

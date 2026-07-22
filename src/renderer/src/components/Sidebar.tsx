@@ -19,6 +19,7 @@ interface Props {
   onQueryChange: (query: string) => void
   onToggleProject: (projectId: string) => void
   onSelectSession: (session: SessionMeta) => void
+  onSessionMenu: (session: SessionMeta) => void
   onCollapseSidebar: () => void
   onResizeStart: (event: ReactMouseEvent) => void
 }
@@ -51,11 +52,13 @@ function matches(session: SessionMeta, query: string): boolean {
 function SessionList({
   items,
   selectedSessionId,
-  onSelectSession
+  onSelectSession,
+  onSessionMenu
 }: {
   items: SessionMeta[] | undefined
   selectedSessionId: string | null
   onSelectSession: (session: SessionMeta) => void
+  onSessionMenu: (session: SessionMeta) => void
 }): ReactElement {
   const { t } = usePrefs()
   return (
@@ -66,6 +69,10 @@ function SessionList({
           <button
             className={`session${session.id === selectedSessionId ? ' is-selected' : ''}`}
             onClick={() => onSelectSession(session)}
+            onContextMenu={(event) => {
+              event.preventDefault()
+              onSessionMenu(session)
+            }}
           >
             <span className="session__title">{session.title}</span>
             <span className="session__meta">
@@ -89,6 +96,7 @@ export function Sidebar({
   onQueryChange,
   onToggleProject,
   onSelectSession,
+  onSessionMenu,
   onCollapseSidebar,
   onResizeStart
 }: Props): ReactElement {
@@ -170,6 +178,7 @@ export function Sidebar({
                   items={rootVisible}
                   selectedSessionId={selectedSessionId}
                   onSelectSession={onSelectSession}
+                  onSessionMenu={onSessionMenu}
                 />
               )}
               {rootOpen &&
@@ -194,6 +203,7 @@ export function Sidebar({
                           items={visible}
                           selectedSessionId={selectedSessionId}
                           onSelectSession={onSelectSession}
+                          onSessionMenu={onSessionMenu}
                         />
                       )}
                     </div>

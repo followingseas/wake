@@ -130,5 +130,9 @@ export interface ClaudeHistoryApi {
   checkForUpdate: (force?: boolean) => Promise<UpdateInfo>
   onUpdateEvent: (callback: (event: UpdateEvent) => void) => () => void
   onOpenSettings: (callback: () => void) => () => void
+  showSessionMenu: (labels: {
+    reveal: string
+    delete: string
+  }) => Promise<'reveal' | 'delete' | null>
   installUpdate: () => Promise<void>
 }

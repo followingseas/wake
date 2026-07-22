@@ -195,6 +195,18 @@ export default function App(): ReactElement {
     }
   }, [])
 
+  const openSessionMenu = useCallback(
+    async (session: SessionMeta) => {
+      const choice = await window.api.showSessionMenu({
+        reveal: t('menu.reveal'),
+        delete: t('menu.delete')
+      })
+      if (choice === 'reveal') window.api.revealSession(session.filePath)
+      else if (choice === 'delete') setDeleteTarget(session)
+    },
+    [t]
+  )
+
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === selected?.projectId) ?? null,
     [projects, selected]
@@ -257,6 +269,7 @@ export default function App(): ReactElement {
           onQueryChange={setQuery}
           onToggleProject={toggleProject}
           onSelectSession={selectSession}
+          onSessionMenu={openSessionMenu}
           onCollapseSidebar={toggleSidebar}
           onResizeStart={startSidebarResize}
         />

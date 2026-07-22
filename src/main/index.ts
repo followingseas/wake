@@ -40,6 +40,26 @@ function registerIpcHandlers(): void {
     isAutoUpdateSupported() ? checkViaAutoUpdater() : checkForUpdate(force === true)
   )
   ipcMain.handle('update:install', () => installUpdate())
+  // 세션 우클릭 컨텍스트 메뉴 — 선택 결과('reveal'|'delete')를, 그냥 닫히면 null을 돌려준다
+  ipcMain.handle('session:menu', (event, labels: { reveal: string; delete: string }) => {
+    return new Promise<'reveal' | 'delete' | null>((resolve) => {
+      let settled = false
+      const done = (value: 'reveal' | 'delete' | null): void => {
+        if (!settled) {
+          settled = true
+          resolve(value)
+        }
+      }
+      const menu = Menu.buildFromTemplate([
+        { label: String(labels?.reveal ?? 'Reveal in Finder'), click: () => done('reveal') },
+        { type: 'separator' },
+        { label: String(labels?.delete ?? 'Delete…'), click: () => done('delete') }
+      ])
+      const window = BrowserWindow.fromWebContents(event.sender) ?? undefined
+      // 닫힘 콜백이 클릭 핸들러보다 먼저 올 수 있어 한 틱 늦춰 null 처리한다
+      menu.popup({ window, callback: () => setTimeout(() => done(null), 100) })
+    })
+  })
   ipcMain.handle('settings:get', () => settingsInfo())
   ipcMain.handle('settings:save', (_event, settings: Partial<AppSettings>) => {
     saveSettings(settings && typeof settings === 'object' ? settings : {})
