@@ -1,3 +1,9 @@
+export interface WorktreeInfo {
+  rootPath: string | null
+  rootDirName: string
+  name: string
+}
+
 export interface ProjectInfo {
   id: string
   dirName: string
@@ -6,6 +12,7 @@ export interface ProjectInfo {
   name: string
   sessionCount: number
   lastActiveAt: number
+  worktree: WorktreeInfo | null
 }
 
 export interface SessionMeta {

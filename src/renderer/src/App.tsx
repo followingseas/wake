@@ -13,6 +13,7 @@ type UpdateBannerState =
   | { mode: 'ready'; version: string }
 import { makeTranslate, resolveLanguage } from './i18n'
 import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
+import { buildGroups, SYNTHETIC_PREFIX } from './lib/groups'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
 import { ConfirmDialog } from './components/ConfirmDialog'
@@ -54,6 +55,7 @@ export default function App(): ReactElement {
   }, [])
 
   const loadSessions = useCallback(async (projectId: string) => {
+    if (projectId.startsWith(SYNTHETIC_PREFIX)) return
     if (loadedProjects.current.has(projectId)) return
     loadedProjects.current.add(projectId)
     const metas = await window.api.listSessions(projectId)
@@ -90,9 +92,11 @@ export default function App(): ReactElement {
     })
     window.api.listProjects().then((list) => {
       setProjects(list)
-      if (list.length > 0) {
-        setExpanded(new Set([list[0].id]))
-        loadSessions(list[0].id)
+      // 최상위는 그룹 단위이므로 첫 그룹의 루트를 펼친다
+      const first = buildGroups(list)[0]
+      if (first) {
+        setExpanded(new Set([first.root.id]))
+        loadSessions(first.root.id)
       }
     })
     return unsubscribe
