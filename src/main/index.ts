@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, Menu } from 'electron'
 import { join } from 'path'
 import { writeFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -45,6 +45,51 @@ function registerIpcHandlers(): void {
     saveSettings(settings && typeof settings === 'object' ? settings : {})
     return settingsInfo()
   })
+}
+
+// 표준 애플리케이션 메뉴 — macOS는 앱 메뉴에, 그 외에는 File 메뉴에 설정 항목을 둔다
+function buildAppMenu(): void {
+  const isKo = app.getLocale().toLowerCase().startsWith('ko')
+  const settingsLabel = isKo ? '설정…' : 'Settings…'
+  const openSettings = (): void => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    win?.webContents.send('menu:open-settings')
+  }
+  const template: Electron.MenuItemConstructorOptions[] = [
+    ...(process.platform === 'darwin'
+      ? ([
+          {
+            label: app.name,
+            submenu: [
+              { role: 'about' },
+              { type: 'separator' },
+              { label: settingsLabel, accelerator: 'Cmd+,', click: openSettings },
+              { type: 'separator' },
+              { role: 'services' },
+              { type: 'separator' },
+              { role: 'hide' },
+              { role: 'hideOthers' },
+              { role: 'unhide' },
+              { type: 'separator' },
+              { role: 'quit' }
+            ]
+          }
+        ] as Electron.MenuItemConstructorOptions[])
+      : ([
+          {
+            label: isKo ? '파일' : 'File',
+            submenu: [
+              { label: settingsLabel, accelerator: 'Ctrl+,', click: openSettings },
+              { type: 'separator' },
+              { role: 'quit' }
+            ]
+          }
+        ] as Electron.MenuItemConstructorOptions[])),
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' }
+  ]
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
 function createWindow(): void {
@@ -111,6 +156,7 @@ app.whenReady().then(() => {
   })
 
   registerIpcHandlers()
+  buildAppMenu()
   createWindow()
 
   app.on('activate', function () {

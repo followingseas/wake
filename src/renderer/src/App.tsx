@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactElement
+} from 'react'
 import type {
   AppSettings,
   Conversation,
@@ -35,6 +43,35 @@ export default function App(): ReactElement {
   const [toast, setToast] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    const saved = Number(localStorage.getItem('wake:sidebarWidth'))
+    return Number.isFinite(saved) && saved >= 220 && saved <= 560 ? saved : 300
+  })
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
+    () => localStorage.getItem('wake:sidebarCollapsed') === '1'
+  )
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      localStorage.setItem('wake:sidebarCollapsed', prev ? '0' : '1')
+      return !prev
+    })
+  }, [])
+
+  const startSidebarResize = useCallback((event: React.MouseEvent) => {
+    event.preventDefault()
+    const clamp = (x: number): number => Math.min(560, Math.max(220, x))
+    const onMove = (e: MouseEvent): void => setSidebarWidth(clamp(e.clientX))
+    const onUp = (e: MouseEvent): void => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      document.body.classList.remove('is-resizing')
+      localStorage.setItem('wake:sidebarWidth', String(clamp(e.clientX)))
+    }
+    document.body.classList.add('is-resizing')
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [])
 
   const lang = resolveLanguage(settings.language)
   const t = useMemo(() => makeTranslate(lang), [lang])
@@ -101,6 +138,9 @@ export default function App(): ReactElement {
     })
     return unsubscribe
   }, [loadSessions])
+
+  // 애플리케이션 메뉴(wake > 설정…)에서 설정 열기
+  useEffect(() => window.api.onOpenSettings(() => setShowSettings(true)), [])
 
   // 검색 시 아직 안 읽은 프로젝트의 세션 메타를 모두 로드한다
   useEffect(() => {
@@ -201,7 +241,11 @@ export default function App(): ReactElement {
 
   return (
     <PrefsContext.Provider value={prefs}>
-      <div className="app" data-font-scale={settings.fontScale}>
+      <div
+        className={`app${sidebarCollapsed ? ' is-sidebar-collapsed' : ''}`}
+        data-font-scale={settings.fontScale}
+        style={{ '--sidebar-width': `${sidebarCollapsed ? 0 : sidebarWidth}px` } as CSSProperties}
+      >
         <Sidebar
           projects={projects}
           sessions={sessions}
@@ -212,8 +256,31 @@ export default function App(): ReactElement {
           onQueryChange={setQuery}
           onToggleProject={toggleProject}
           onSelectSession={selectSession}
-          onOpenSettings={() => setShowSettings(true)}
+          onCollapseSidebar={toggleSidebar}
+          onResizeStart={startSidebarResize}
         />
+        {sidebarCollapsed && (
+          <button
+            className="sidebar-expand"
+            onClick={toggleSidebar}
+            title={t('sidebar.expand')}
+            aria-label={t('sidebar.expand')}
+          >
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+              <rect
+                x="1.5"
+                y="2.5"
+                width="13"
+                height="11"
+                rx="2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+              />
+              <line x1="6" y1="2.5" x2="6" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+          </button>
+        )}
         {selected ? (
           <ConversationView
             session={selected}

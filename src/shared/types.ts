@@ -129,5 +129,6 @@ export interface ClaudeHistoryApi {
   saveSettings: (settings: Partial<AppSettings>) => Promise<SettingsInfo>
   checkForUpdate: (force?: boolean) => Promise<UpdateInfo>
   onUpdateEvent: (callback: (event: UpdateEvent) => void) => () => void
+  onOpenSettings: (callback: () => void) => () => void
   installUpdate: () => Promise<void>
 }

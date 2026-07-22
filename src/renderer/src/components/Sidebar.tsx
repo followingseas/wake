@@ -1,4 +1,9 @@
-import { useMemo, type ReactElement, type RefObject } from 'react'
+import {
+  useMemo,
+  type MouseEvent as ReactMouseEvent,
+  type ReactElement,
+  type RefObject
+} from 'react'
 import type { ProjectInfo, SessionMeta } from '../../../shared/types'
 import { formatRelativeTime, shortenPath } from '../lib/format'
 import { buildGroups } from '../lib/groups'
@@ -14,7 +19,8 @@ interface Props {
   onQueryChange: (query: string) => void
   onToggleProject: (projectId: string) => void
   onSelectSession: (session: SessionMeta) => void
-  onOpenSettings: () => void
+  onCollapseSidebar: () => void
+  onResizeStart: (event: ReactMouseEvent) => void
 }
 
 function Chevron({ open }: { open: boolean }): ReactElement {
@@ -83,7 +89,8 @@ export function Sidebar({
   onQueryChange,
   onToggleProject,
   onSelectSession,
-  onOpenSettings
+  onCollapseSidebar,
+  onResizeStart
 }: Props): ReactElement {
   const { t } = usePrefs()
   const searching = query.trim().length > 0
@@ -94,12 +101,24 @@ export function Sidebar({
       <div className="sidebar__titlebar">
         <span className="sidebar__appname">Wake</span>
         <button
-          className="sidebar__settings"
-          onClick={onOpenSettings}
-          title={`${t('sidebar.settings')} (⌘,)`}
-          aria-label={t('sidebar.settings')}
+          className="sidebar__collapse"
+          onClick={onCollapseSidebar}
+          title={t('sidebar.collapse')}
+          aria-label={t('sidebar.collapse')}
         >
-          ⚙
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+            <rect
+              x="1.5"
+              y="2.5"
+              width="13"
+              height="11"
+              rx="2"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+            />
+            <line x1="6" y1="2.5" x2="6" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
+          </svg>
         </button>
       </div>
       <div className="sidebar__search">
@@ -185,6 +204,7 @@ export function Sidebar({
         })}
         {groups.length === 0 && <p className="sidebar__empty">{t('sidebar.empty')}</p>}
       </nav>
+      <div className="sidebar__resizer" onMouseDown={onResizeStart} aria-hidden="true" />
     </aside>
   )
 }

@@ -11,6 +11,8 @@
   --text-3: #5f7e89;
   --accent: #56b7c3;
   --accent-soft: rgba(86, 183, 195, 0.11);
+  --deep: #1f7a93;
+  --bubble-user: color-mix(in srgb, #1f7a93 38%, #0b1f2a);
   --tool: #7ec8b4;
   --tool-soft: rgba(126, 200, 180, 0.09);
   --danger: #d0847a;
@@ -74,6 +76,7 @@ button {
 
 /* ── 사이드바 ────────────────────────────────────────────────── */
 .sidebar {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--bg-raised);
@@ -428,7 +431,7 @@ button {
 .user-message__bubble {
   position: relative;
   min-width: 0;
-  background: var(--accent-soft);
+  background: var(--bubble-user);
   border-radius: 14px 14px 3px 14px;
   padding: 12px 16px;
 }
@@ -440,7 +443,7 @@ button {
   bottom: 0;
   width: 10px;
   height: 10px;
-  background: var(--accent-soft);
+  background: var(--bubble-user);
   clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
 
@@ -1016,18 +1019,75 @@ button {
   padding-right: 10px;
 }
 
-.sidebar__settings {
+.sidebar__collapse {
   -webkit-app-region: no-drag;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-3);
   padding: 3px 7px;
   border-radius: 6px;
   line-height: 1;
 }
 
-.sidebar__settings:hover {
+.sidebar__collapse:hover {
   color: var(--text);
   background: var(--surface);
+}
+
+/* ── 사이드바 리사이즈/접기 ──────────────────────────────────── */
+.sidebar__resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar__resizer:hover,
+body.is-resizing .sidebar__resizer {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+body.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.app.is-sidebar-collapsed {
+  grid-template-columns: 1fr;
+}
+
+.app.is-sidebar-collapsed .sidebar {
+  display: none;
+}
+
+/* 접힘 상태에서 신호등 오른쪽에 뜨는 펼치기 버튼 */
+.sidebar-expand {
+  position: fixed;
+  top: 10px;
+  left: 84px;
+  z-index: 40;
+  width: 28px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  border-radius: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar-expand:hover {
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.app.is-sidebar-collapsed .conversation__header {
+  padding-left: 120px;
 }
 
 .dialog--settings {
