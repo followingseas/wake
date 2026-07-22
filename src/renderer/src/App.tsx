@@ -58,8 +58,11 @@ export default function App(): ReactElement {
     loadedProjects.current.add(projectId)
     const metas = await window.api.listSessions(projectId)
     setSessions((prev) => ({ ...prev, [projectId]: metas }))
+    // 시작 시 sessionCount는 파일 수 휴리스틱이라, 실제 목록이 비면 프로젝트를 숨긴다 (삭제 경로와 동일 규칙)
     setProjects((prev) =>
-      prev.map((p) => (p.id === projectId ? { ...p, sessionCount: metas.length } : p))
+      prev
+        .map((p) => (p.id === projectId ? { ...p, sessionCount: metas.length } : p))
+        .filter((p) => p.sessionCount > 0)
     )
   }, [])
 
