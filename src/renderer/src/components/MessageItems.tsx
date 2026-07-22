@@ -37,10 +37,8 @@ export function UserMessage({ item }: { item: UserItem }): ReactElement {
   const clock = formatClock(item.timestamp)
   return (
     <article className="user-message">
-      <div className="user-message__gutter" aria-hidden="true">
-        ❯
-      </div>
-      <div className="user-message__body">
+      {clock && <time className="item-clock">{clock}</time>}
+      <div className="user-message__bubble">
         <pre className="user-message__text">{item.text}</pre>
         {item.images.length > 0 && (
           <div className="user-message__images">
@@ -54,7 +52,6 @@ export function UserMessage({ item }: { item: UserItem }): ReactElement {
           </div>
         )}
       </div>
-      {clock && <time className="item-clock">{clock}</time>}
     </article>
   )
 }
