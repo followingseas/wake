@@ -3,9 +3,10 @@ import { createInterface } from 'readline'
 
 export type JsonlEntry = Record<string, unknown>
 
+/** onEntry가 false를 반환하면 나머지 라인을 읽지 않고 중단한다. */
 export async function forEachJsonlLine(
   filePath: string,
-  onEntry: (entry: JsonlEntry) => void
+  onEntry: (entry: JsonlEntry) => void | boolean
 ): Promise<void> {
   const stream = createReadStream(filePath, { encoding: 'utf8' })
   const rl = createInterface({ input: stream, crlfDelay: Infinity })
@@ -18,7 +19,7 @@ export async function forEachJsonlLine(
       } catch {
         continue
       }
-      onEntry(entry)
+      if (onEntry(entry) === false) break
     }
   } finally {
     rl.close()

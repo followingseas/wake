@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactElement
+} from 'react'
 import type {
   AppSettings,
   Conversation,
@@ -13,10 +21,12 @@ type UpdateBannerState =
   | { mode: 'ready'; version: string }
 import { makeTranslate, resolveLanguage } from './i18n'
 import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
+import { buildGroups, SYNTHETIC_PREFIX } from './lib/groups'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { SettingsDialog } from './components/SettingsDialog'
+import { SidebarExpand } from './components/SidebarExpand'
 import { WakeMark } from './components/WakeMark'
 
 export default function App(): ReactElement {
@@ -34,6 +44,35 @@ export default function App(): ReactElement {
   const [toast, setToast] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    const saved = Number(localStorage.getItem('wake:sidebarWidth'))
+    return Number.isFinite(saved) && saved >= 220 && saved <= 560 ? saved : 300
+  })
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
+    () => localStorage.getItem('wake:sidebarCollapsed') === '1'
+  )
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      localStorage.setItem('wake:sidebarCollapsed', prev ? '0' : '1')
+      return !prev
+    })
+  }, [])
+
+  const startSidebarResize = useCallback((event: React.MouseEvent) => {
+    event.preventDefault()
+    const clamp = (x: number): number => Math.min(560, Math.max(220, x))
+    const onMove = (e: MouseEvent): void => setSidebarWidth(clamp(e.clientX))
+    const onUp = (e: MouseEvent): void => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      document.body.classList.remove('is-resizing')
+      localStorage.setItem('wake:sidebarWidth', String(clamp(e.clientX)))
+    }
+    document.body.classList.add('is-resizing')
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [])
 
   const lang = resolveLanguage(settings.language)
   const t = useMemo(() => makeTranslate(lang), [lang])
@@ -54,12 +93,16 @@ export default function App(): ReactElement {
   }, [])
 
   const loadSessions = useCallback(async (projectId: string) => {
+    if (projectId.startsWith(SYNTHETIC_PREFIX)) return
     if (loadedProjects.current.has(projectId)) return
     loadedProjects.current.add(projectId)
     const metas = await window.api.listSessions(projectId)
     setSessions((prev) => ({ ...prev, [projectId]: metas }))
+    // 시작 시 sessionCount는 파일 수 휴리스틱이라, 실제 목록이 비면 프로젝트를 숨긴다 (삭제 경로와 동일 규칙)
     setProjects((prev) =>
-      prev.map((p) => (p.id === projectId ? { ...p, sessionCount: metas.length } : p))
+      prev
+        .map((p) => (p.id === projectId ? { ...p, sessionCount: metas.length } : p))
+        .filter((p) => p.sessionCount > 0)
     )
   }, [])
 
@@ -87,13 +130,18 @@ export default function App(): ReactElement {
     })
     window.api.listProjects().then((list) => {
       setProjects(list)
-      if (list.length > 0) {
-        setExpanded(new Set([list[0].id]))
-        loadSessions(list[0].id)
+      // 최상위는 그룹 단위이므로 첫 그룹의 루트를 펼친다
+      const first = buildGroups(list)[0]
+      if (first) {
+        setExpanded(new Set([first.root.id]))
+        loadSessions(first.root.id)
       }
     })
     return unsubscribe
   }, [loadSessions])
+
+  // 애플리케이션 메뉴(wake > 설정…)에서 설정 열기
+  useEffect(() => window.api.onOpenSettings(() => setShowSettings(true)), [])
 
   // 검색 시 아직 안 읽은 프로젝트의 세션 메타를 모두 로드한다
   useEffect(() => {
@@ -147,6 +195,18 @@ export default function App(): ReactElement {
     }
   }, [])
 
+  const openSessionMenu = useCallback(
+    async (session: SessionMeta) => {
+      const choice = await window.api.showSessionMenu({
+        reveal: t('menu.reveal'),
+        delete: t('menu.delete')
+      })
+      if (choice === 'reveal') window.api.revealSession(session.filePath)
+      else if (choice === 'delete') setDeleteTarget(session)
+    },
+    [t]
+  )
+
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === selected?.projectId) ?? null,
     [projects, selected]
@@ -194,7 +254,11 @@ export default function App(): ReactElement {
 
   return (
     <PrefsContext.Provider value={prefs}>
-      <div className="app" data-font-scale={settings.fontScale}>
+      <div
+        className={`app${sidebarCollapsed ? ' is-sidebar-collapsed' : ''}`}
+        data-font-scale={settings.fontScale}
+        style={{ '--sidebar-width': `${sidebarCollapsed ? 0 : sidebarWidth}px` } as CSSProperties}
+      >
         <Sidebar
           projects={projects}
           sessions={sessions}
@@ -205,7 +269,9 @@ export default function App(): ReactElement {
           onQueryChange={setQuery}
           onToggleProject={toggleProject}
           onSelectSession={selectSession}
-          onOpenSettings={() => setShowSettings(true)}
+          onSessionMenu={openSessionMenu}
+          onCollapseSidebar={toggleSidebar}
+          onResizeStart={startSidebarResize}
         />
         {selected ? (
           <ConversationView
@@ -217,9 +283,11 @@ export default function App(): ReactElement {
             onFork={() => runAction('fork')}
             onDelete={() => setDeleteTarget(selected)}
             onReveal={() => window.api.revealSession(selected.filePath)}
+            onExpandSidebar={sidebarCollapsed ? toggleSidebar : null}
           />
         ) : (
           <main className="conversation conversation--empty">
+            {sidebarCollapsed && <SidebarExpand onClick={toggleSidebar} />}
             <div className="empty-state">
               <div className="empty-state__mark">
                 <WakeMark size={84} />

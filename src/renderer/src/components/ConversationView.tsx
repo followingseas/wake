@@ -3,6 +3,7 @@ import type { Conversation, ProjectInfo, SessionMeta } from '../../../shared/typ
 import { formatBytes, formatFullDate, shortenPath } from '../lib/format'
 import { usePrefs } from '../prefs'
 import { AssistantTurn, UserMessage } from './MessageItems'
+import { SidebarExpand } from './SidebarExpand'
 
 interface Props {
   session: SessionMeta
@@ -13,6 +14,7 @@ interface Props {
   onFork: () => void
   onDelete: () => void
   onReveal: () => void
+  onExpandSidebar: (() => void) | null
 }
 
 export function ConversationView({
@@ -23,7 +25,8 @@ export function ConversationView({
   onResume,
   onFork,
   onDelete,
-  onReveal
+  onReveal,
+  onExpandSidebar
 }: Props): ReactElement {
   const { t, settings } = usePrefs()
   const cwd = session.cwd ?? project?.realPath ?? null
@@ -35,6 +38,7 @@ export function ConversationView({
   return (
     <main className="conversation">
       <header className="conversation__header">
+        {onExpandSidebar && <SidebarExpand onClick={onExpandSidebar} />}
         <div className="conversation__heading">
           <h1 title={session.title}>{session.title}</h1>
           <p className="conversation__meta">

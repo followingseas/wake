@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, Menu } from 'electron'
 import { join } from 'path'
 import { writeFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -40,11 +40,76 @@ function registerIpcHandlers(): void {
     isAutoUpdateSupported() ? checkViaAutoUpdater() : checkForUpdate(force === true)
   )
   ipcMain.handle('update:install', () => installUpdate())
+  // 세션 우클릭 컨텍스트 메뉴 — 선택 결과('reveal'|'delete')를, 그냥 닫히면 null을 돌려준다
+  ipcMain.handle('session:menu', (event, labels: { reveal: string; delete: string }) => {
+    return new Promise<'reveal' | 'delete' | null>((resolve) => {
+      let settled = false
+      const done = (value: 'reveal' | 'delete' | null): void => {
+        if (!settled) {
+          settled = true
+          resolve(value)
+        }
+      }
+      const menu = Menu.buildFromTemplate([
+        { label: String(labels?.reveal ?? 'Reveal in Finder'), click: () => done('reveal') },
+        { type: 'separator' },
+        { label: String(labels?.delete ?? 'Delete…'), click: () => done('delete') }
+      ])
+      const window = BrowserWindow.fromWebContents(event.sender) ?? undefined
+      // 닫힘 콜백이 클릭 핸들러보다 먼저 올 수 있어 한 틱 늦춰 null 처리한다
+      menu.popup({ window, callback: () => setTimeout(() => done(null), 100) })
+    })
+  })
   ipcMain.handle('settings:get', () => settingsInfo())
   ipcMain.handle('settings:save', (_event, settings: Partial<AppSettings>) => {
     saveSettings(settings && typeof settings === 'object' ? settings : {})
     return settingsInfo()
   })
+}
+
+// 표준 애플리케이션 메뉴 — macOS는 앱 메뉴에, 그 외에는 File 메뉴에 설정 항목을 둔다
+function buildAppMenu(): void {
+  const isKo = app.getLocale().toLowerCase().startsWith('ko')
+  const settingsLabel = isKo ? '설정…' : 'Settings…'
+  const openSettings = (): void => {
+    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    win?.webContents.send('menu:open-settings')
+  }
+  const template: Electron.MenuItemConstructorOptions[] = [
+    ...(process.platform === 'darwin'
+      ? ([
+          {
+            label: app.name,
+            submenu: [
+              { role: 'about' },
+              { type: 'separator' },
+              { label: settingsLabel, accelerator: 'Cmd+,', click: openSettings },
+              { type: 'separator' },
+              { role: 'services' },
+              { type: 'separator' },
+              { role: 'hide' },
+              { role: 'hideOthers' },
+              { role: 'unhide' },
+              { type: 'separator' },
+              { role: 'quit' }
+            ]
+          }
+        ] as Electron.MenuItemConstructorOptions[])
+      : ([
+          {
+            label: isKo ? '파일' : 'File',
+            submenu: [
+              { label: settingsLabel, accelerator: 'Ctrl+,', click: openSettings },
+              { type: 'separator' },
+              { role: 'quit' }
+            ]
+          }
+        ] as Electron.MenuItemConstructorOptions[])),
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' }
+  ]
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
 
 function createWindow(): void {
@@ -111,6 +176,7 @@ app.whenReady().then(() => {
   })
 
   registerIpcHandlers()
+  buildAppMenu()
   createWindow()
 
   app.on('activate', function () {

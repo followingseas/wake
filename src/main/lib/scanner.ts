@@ -1,7 +1,7 @@
 import { readdir, stat } from 'fs/promises'
 import { homedir } from 'os'
 import { basename, join } from 'path'
-import type { ProjectInfo, SessionMeta } from '../../shared/types'
+import type { ProjectInfo, SessionMeta, WorktreeInfo } from '../../shared/types'
 import { forEachJsonlLine, readHead } from './jsonl'
 import { getMessage, isRealUserPrompt, summarize } from './entries'
 
@@ -26,6 +26,49 @@ async function detectRealPath(sessionFiles: string[]): Promise<string | null> {
   return null
 }
 
+// 실제 대화(사용자 프롬프트 또는 어시스턴트 메시지)가 있는 세션인지 확인한다.
+// 첫 실제 메시지를 찾는 즉시 스트리밍을 중단하므로, 대부분의 세션은 앞쪽 몇 KB만 읽는다.
+// listSessions의 messageCount > 0 필터와 동일한 판정 기준을 사용해 카운트가 어긋나지 않게 한다.
+async function hasRealMessage(filePath: string): Promise<boolean> {
+  let found = false
+  await forEachJsonlLine(filePath, (entry) => {
+    if (entry.type === 'user') {
+      if (isRealUserPrompt(entry)) {
+        found = true
+        return false
+      }
+    } else if (entry.type === 'assistant' && entry.isSidechain !== true) {
+      if (typeof getMessage(entry)?.id === 'string') {
+        found = true
+        return false
+      }
+    }
+    return undefined
+  })
+  return found
+}
+
+// Claude Code 워크트리(.claude/worktrees/<name>) 세션인지 판별한다.
+// realPath가 우선이고, cwd 기록이 없는 세션은 디렉토리명 패턴으로 폴백한다.
+function detectWorktree(dirName: string, realPath: string | null): WorktreeInfo | null {
+  const dirMarker = '--claude-worktrees-'
+  const pathMarker = '/.claude/worktrees/'
+  let rootPath: string | null = null
+  let name: string | null = null
+  if (realPath) {
+    const idx = realPath.indexOf(pathMarker)
+    if (idx !== -1) {
+      rootPath = realPath.slice(0, idx)
+      name = realPath.slice(idx + pathMarker.length).split('/')[0] || null
+    }
+  }
+  const dirIdx = dirName.indexOf(dirMarker)
+  const rootDirName = dirIdx !== -1 ? dirName.slice(0, dirIdx) : ''
+  if (name === null && dirIdx !== -1) name = dirName.slice(dirIdx + dirMarker.length) || null
+  if (name === null) return null
+  return { rootPath, rootDirName, name }
+}
+
 export async function listProjects(): Promise<ProjectInfo[]> {
   const root = projectsRoot()
   const dirents = await readdir(root, { withFileTypes: true }).catch(() => [])
@@ -40,7 +83,9 @@ export async function listProjects(): Promise<ProjectInfo[]> {
       if (!file.endsWith('.jsonl')) continue
       const filePath = join(dirPath, file)
       const info = await stat(filePath).catch(() => null)
-      if (info && info.size > 0) sessionFiles.push({ path: filePath, mtimeMs: info.mtimeMs })
+      if (!info || info.size === 0) continue
+      if (!(await hasRealMessage(filePath).catch(() => false))) continue
+      sessionFiles.push({ path: filePath, mtimeMs: info.mtimeMs })
     }
     if (sessionFiles.length === 0) continue
 
@@ -55,7 +100,8 @@ export async function listProjects(): Promise<ProjectInfo[]> {
         ? basename(realPath)
         : (dirent.name.split('-').filter(Boolean).pop() ?? dirent.name),
       sessionCount: sessionFiles.length,
-      lastActiveAt: sessionFiles[0].mtimeMs
+      lastActiveAt: sessionFiles[0].mtimeMs,
+      worktree: detectWorktree(dirent.name, realPath)
     })
   }
 

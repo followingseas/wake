@@ -11,6 +11,8 @@
   --text-3: #5f7e89;
   --accent: #56b7c3;
   --accent-soft: rgba(86, 183, 195, 0.11);
+  --deep: #1f7a93;
+  --bubble-user: color-mix(in srgb, #1f7a93 38%, #0b1f2a);
   --tool: #7ec8b4;
   --tool-soft: rgba(126, 200, 180, 0.09);
   --danger: #d0847a;
@@ -74,6 +76,7 @@ button {
 
 /* ── 사이드바 ────────────────────────────────────────────────── */
 .sidebar {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--bg-raised);
@@ -198,6 +201,45 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
   user-select: none;
+}
+
+/* ── worktree 서브그룹 (루트 프로젝트 하위) ──────────────────── */
+.worktree {
+  margin-left: 14px;
+}
+
+.worktree__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.worktree__header:hover {
+  background: var(--surface);
+}
+
+.worktree__header:hover .project__chevron {
+  color: var(--accent);
+}
+
+.worktree__mark {
+  color: var(--text-3);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.worktree__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .session-list {
@@ -362,9 +404,9 @@ button {
 }
 
 .timeline {
-  max-width: 760px;
+  max-width: 1150px;
   margin: 0 auto;
-  padding: 36px 40px 140px;
+  padding: 36px clamp(24px, 4vw, 56px) 140px;
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -377,29 +419,32 @@ button {
   user-select: none;
 }
 
-/* ── 사용자 메시지: 터미널 프롬프트 블록 (시그니처) ─────────────── */
+/* ── 사용자 메시지: 우측 정렬 말풍선 ─────────────────────────── */
 .user-message {
+  align-self: flex-end;
   display: flex;
-  gap: 12px;
-  background: var(--accent-soft);
-  border-left: 2px solid var(--accent);
-  border-radius: 4px 8px 8px 4px;
-  padding: 14px 18px;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 75%;
+}
+
+.user-message__bubble {
   position: relative;
-}
-
-.user-message__gutter {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent);
-  line-height: 1.65;
-  user-select: none;
-}
-
-.user-message__body {
-  flex: 1;
   min-width: 0;
+  background: var(--bubble-user);
+  border-radius: 14px 14px 3px 14px;
+  padding: 12px 16px;
+}
+
+.user-message__bubble::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--bubble-user);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
 
 .user-message__text {
@@ -426,9 +471,8 @@ button {
 }
 
 .user-message .item-clock {
-  position: absolute;
-  top: 8px;
-  right: 12px;
+  flex-shrink: 0;
+  margin-bottom: 3px;
 }
 
 /* ── 시스템/커맨드 메타 라인 ─────────────────────────────────── */
@@ -490,7 +534,7 @@ button {
 }
 
 .assistant-turn > .item-clock {
-  align-self: flex-end;
+  align-self: flex-start;
   margin-bottom: -8px;
 }
 
@@ -499,7 +543,7 @@ button {
   font-size: 15.5px;
   line-height: 1.78;
   color: var(--text);
-  max-width: 70ch;
+  max-width: 88ch;
 }
 
 .markdown > * + * {
@@ -975,18 +1019,83 @@ button {
   padding-right: 10px;
 }
 
-.sidebar__settings {
+.sidebar__collapse {
   -webkit-app-region: no-drag;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-3);
   padding: 3px 7px;
   border-radius: 6px;
   line-height: 1;
 }
 
-.sidebar__settings:hover {
+.sidebar__collapse:hover {
   color: var(--text);
   background: var(--surface);
+}
+
+/* ── 사이드바 리사이즈/접기 ──────────────────────────────────── */
+.sidebar__resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar__resizer:hover,
+body.is-resizing .sidebar__resizer {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+body.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.app.is-sidebar-collapsed {
+  grid-template-columns: 1fr;
+}
+
+.app.is-sidebar-collapsed .sidebar {
+  display: none;
+}
+
+/* 접힘 상태의 펼치기 버튼 — 드래그 영역(헤더/빈 화면)의 자식으로 렌더링된다 */
+.sidebar-expand {
+  width: 28px;
+  height: 24px;
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  border-radius: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.sidebar-expand:hover {
+  color: var(--accent);
+  background: var(--surface);
+}
+
+.conversation--empty {
+  position: relative;
+}
+
+.conversation--empty .sidebar-expand {
+  position: absolute;
+  top: 10px;
+  left: 84px;
+}
+
+.app.is-sidebar-collapsed .conversation__header {
+  padding-left: 84px; /* macOS 신호등 버튼 자리 */
 }
 
 .dialog--settings {

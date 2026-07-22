@@ -1,3 +1,9 @@
+export interface WorktreeInfo {
+  rootPath: string | null
+  rootDirName: string
+  name: string
+}
+
 export interface ProjectInfo {
   id: string
   dirName: string
@@ -6,6 +12,7 @@ export interface ProjectInfo {
   name: string
   sessionCount: number
   lastActiveAt: number
+  worktree: WorktreeInfo | null
 }
 
 export interface SessionMeta {
@@ -122,5 +129,10 @@ export interface ClaudeHistoryApi {
   saveSettings: (settings: Partial<AppSettings>) => Promise<SettingsInfo>
   checkForUpdate: (force?: boolean) => Promise<UpdateInfo>
   onUpdateEvent: (callback: (event: UpdateEvent) => void) => () => void
+  onOpenSettings: (callback: () => void) => () => void
+  showSessionMenu: (labels: {
+    reveal: string
+    delete: string
+  }) => Promise<'reveal' | 'delete' | null>
   installUpdate: () => Promise<void>
 }
