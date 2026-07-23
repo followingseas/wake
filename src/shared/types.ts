@@ -47,8 +47,25 @@ export interface UserImage {
 }
 
 export interface UserMetaInfo {
-  /** 'command'는 label에 커맨드명이 들어가고, 나머지는 kind 기반 번역 라벨을 쓴다 */
-  kind: 'command' | 'output' | 'context' | 'injected'
+  /**
+   * 'command'(슬래시 커맨드)·'injected'(주입 컨텍스트)는 label에 내용이 들어가고,
+   * 나머지는 kind 기반 번역 라벨을 쓴다.
+   * - bashRun: ! 셸 명령 실행. label = 명령어, detail = 출력(뒤따르는 bashOutput 엔트리를 병합)
+   * - bashOutput: 짝이 되는 bashRun 없이 단독으로 남은 셸 출력
+   * - task: 백그라운드 작업 알림. label = summary
+   * - interrupt: 사용자가 Esc로 중단. label = 'tool-use'면 도구 실행 중단
+   * - compact: 컨텍스트 요약으로 이어진 세션 경계. detail = 이월된 요약 전문
+   */
+  kind:
+    | 'command'
+    | 'output'
+    | 'context'
+    | 'injected'
+    | 'bashRun'
+    | 'bashOutput'
+    | 'task'
+    | 'interrupt'
+    | 'compact'
   label: string | null
   detail: string | null
 }

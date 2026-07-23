@@ -45,9 +45,25 @@ export async function parseConversation(filePath: string): Promise<Conversation>
       // tool_result 전용 엔트리는 어시스턴트 턴 중간 단계이므로 별도 아이템으로 만들지 않는다
       if (toolResults.length > 0 && !text.trim() && images.length === 0) return
 
+      // 컨텍스트 초과로 이어진 세션의 요약 엔트리 — isMeta 없이 기록되므로 별도 판정
+      if (entry.isCompactSummary === true) {
+        flushAssistant()
+        items.push({
+          kind: 'user',
+          uuid: typeof entry.uuid === 'string' ? entry.uuid : `user-${items.length}`,
+          timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : null,
+          text: '',
+          images: [],
+          meta: { kind: 'compact', label: null, detail: text.trim() || null }
+        })
+        return
+      }
+
       // isMeta는 하네스가 주입한 user 롤 메시지(스킬 지침, 커맨드 캐비앳 등)를 표시한다
       if (entry.isMeta === true) {
-        if (!text.trim()) {
+        // 라벨/본문에서 래퍼 태그 표기는 걷어내고 내용만 남긴다
+        const cleaned = text.replace(/<\/?(?:local-command-caveat|system-reminder)>/g, '').trim()
+        if (!cleaned) {
           hiddenCount += 1
           return
         }
@@ -58,7 +74,7 @@ export async function parseConversation(filePath: string): Promise<Conversation>
           timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : null,
           text: '',
           images: [],
-          meta: { kind: 'injected', label: summarize(text, 100), detail: text.trim() }
+          meta: { kind: 'injected', label: summarize(cleaned, 100), detail: cleaned }
         })
         return
       }
@@ -67,6 +83,14 @@ export async function parseConversation(filePath: string): Promise<Conversation>
       if (!normalized && !meta && images.length === 0) {
         hiddenCount += 1
         return
+      }
+      // ! 셸 명령의 출력 엔트리는 직전 bashRun 아이템의 detail로 병합한다
+      if (meta?.kind === 'bashOutput') {
+        const prev = items[items.length - 1]
+        if (prev?.kind === 'user' && prev.meta?.kind === 'bashRun' && prev.meta.detail === null) {
+          prev.meta.detail = meta.detail ?? ''
+          return
+        }
       }
       flushAssistant()
       items.push({
