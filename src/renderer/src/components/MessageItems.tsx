@@ -14,8 +14,17 @@ function MetaLine({ item }: { item: UserItem }): ReactElement {
   const meta = item.meta
   const detail = meta?.detail ?? null
   const label =
-    meta?.label ??
-    (meta?.kind === 'output' ? t('meta.output') : meta?.kind === 'context' ? t('meta.context') : '')
+    meta?.kind === 'output'
+      ? t('meta.output')
+      : meta?.kind === 'context'
+        ? t('meta.context')
+        : meta?.kind === 'bashOutput'
+          ? t('meta.bashOutput')
+          : meta?.kind === 'task'
+            ? meta.label
+              ? `${t('meta.task')} · ${meta.label}`
+              : t('meta.task')
+            : (meta?.label ?? '')
   return (
     <div className="meta-line">
       <button
@@ -31,9 +40,74 @@ function MetaLine({ item }: { item: UserItem }): ReactElement {
   )
 }
 
+/** ! 접두사로 직접 실행한 셸 명령 — 사용자 액션이므로 우측에 터미널 칩으로 표시 */
+function BashRun({ item }: { item: UserItem }): ReactElement {
+  const { t } = usePrefs()
+  const [open, setOpen] = useState(false)
+  const output = item.meta?.detail || null
+  const clock = formatClock(item.timestamp)
+  return (
+    <article className="user-message user-message--bash">
+      {clock && <time className="item-clock">{clock}</time>}
+      <div className="bash-run">
+        <button
+          className="bash-run__row"
+          onClick={() => output && setOpen((v) => !v)}
+          disabled={!output}
+          title={t('meta.bashRun.hint')}
+        >
+          <span className="bash-run__prompt">!</span>
+          <code className="bash-run__command">{item.meta?.label}</code>
+          {output && <span className={`bash-run__chevron${open ? ' is-open' : ''}`}>▸</span>}
+        </button>
+        {open && output && <pre className="bash-run__output">{output}</pre>}
+      </div>
+    </article>
+  )
+}
+
+/** Esc 중단 마커 — 사용자 액션이므로 우측 정렬의 얇은 상태 라인으로 표시 */
+function InterruptLine({ item }: { item: UserItem }): ReactElement {
+  const { t } = usePrefs()
+  const label = item.meta?.label === 'tool-use' ? t('meta.interruptTool') : t('meta.interrupt')
+  return (
+    <div className="interrupt-line" role="status">
+      <span className="interrupt-line__mark">⎋</span>
+      <span>{label}</span>
+    </div>
+  )
+}
+
+/** 컨텍스트 요약으로 이어진 세션 경계 — 가로 구분선, 클릭하면 이월된 요약 전문 */
+function CompactDivider({ item }: { item: UserItem }): ReactElement {
+  const { t } = usePrefs()
+  const [open, setOpen] = useState(false)
+  const detail = item.meta?.detail ?? null
+  return (
+    <div className="compact-divider">
+      <button
+        className="compact-divider__row"
+        onClick={() => detail && setOpen((v) => !v)}
+        disabled={!detail}
+        title={detail ? t('meta.compact.hint') : undefined}
+      >
+        <span className="compact-divider__line" />
+        <span className="compact-divider__label">{t('meta.compact')}</span>
+        <span className="compact-divider__line" />
+      </button>
+      {open && detail && <pre className="meta-line__detail compact-divider__detail">{detail}</pre>}
+    </div>
+  )
+}
+
 export function UserMessage({ item }: { item: UserItem }): ReactElement {
   const { t } = usePrefs()
-  if (item.meta) return <MetaLine item={item} />
+  if (item.meta) {
+    if (item.meta.kind === 'bashRun') return <BashRun item={item} />
+    if (item.meta.kind === 'interrupt') return <InterruptLine item={item} />
+    if (item.meta.kind === 'compact') return <CompactDivider item={item} />
+    return <MetaLine item={item} />
+  }
   const clock = formatClock(item.timestamp)
   return (
     <article className="user-message">

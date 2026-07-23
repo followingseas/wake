@@ -103,6 +103,34 @@ export function normalizeUserText(rawText: string): {
 } {
   const stripped = rawText.replace(SYSTEM_REMINDER_RE, '').replace(CAVEAT_RE, '').trim()
 
+  // ! 접두사 셸 명령: 입력과 출력이 각각 별도 user 엔트리로 기록된다 (parser가 병합)
+  if (stripped.startsWith('<bash-input>')) {
+    const input = extractTag(stripped, 'bash-input') ?? ''
+    return { text: '', meta: { kind: 'bashRun', label: input, detail: null } }
+  }
+  if (stripped.startsWith('<bash-stdout>') || stripped.startsWith('<bash-stderr>')) {
+    const stdout = extractTag(stripped, 'bash-stdout') ?? ''
+    const stderr = extractTag(stripped, 'bash-stderr') ?? ''
+    const output = [stdout, stderr].filter(Boolean).join('\n').trim()
+    return { text: '', meta: { kind: 'bashOutput', label: null, detail: output || null } }
+  }
+  // 백그라운드 작업 완료/중단 시 하네스가 주입하는 알림
+  if (stripped.startsWith('<task-notification>')) {
+    const summary = extractTag(stripped, 'summary') ?? extractTag(stripped, 'status')
+    return { text: '', meta: { kind: 'task', label: summary, detail: stripped } }
+  }
+  // 사용자가 Esc로 응답/도구 실행을 중단했을 때의 마커
+  if (stripped.startsWith('[Request interrupted by user')) {
+    return {
+      text: '',
+      meta: {
+        kind: 'interrupt',
+        label: stripped.includes('for tool use') ? 'tool-use' : null,
+        detail: null
+      }
+    }
+  }
+
   if (stripped.includes('<command-name>')) {
     const name = extractTag(stripped, 'command-name') ?? 'command'
     const args = extractTag(stripped, 'command-args')

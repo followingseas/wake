@@ -1,9 +1,12 @@
 import type { ReactElement } from 'react'
-import type { Conversation, ProjectInfo, SessionMeta } from '../../../shared/types'
+import type { Conversation, ProjectInfo, SessionMeta, UserMetaInfo } from '../../../shared/types'
 import { formatBytes, formatFullDate, shortenPath } from '../lib/format'
 import { usePrefs } from '../prefs'
 import { AssistantTurn, UserMessage } from './MessageItems'
 import { SidebarExpand } from './SidebarExpand'
+
+// 사용자 액션(! 셸 명령, Esc 중단)과 세션 경계는 시스템 메시지 숨김과 무관하게 항상 보여준다
+const ALWAYS_VISIBLE_META = new Set<UserMetaInfo['kind']>(['bashRun', 'interrupt', 'compact'])
 
 interface Props {
   session: SessionMeta
@@ -32,7 +35,11 @@ export function ConversationView({
   const cwd = session.cwd ?? project?.realPath ?? null
   const items = conversation
     ? conversation.items.filter(
-        (item) => settings.showMeta || item.kind !== 'user' || item.meta === null
+        (item) =>
+          settings.showMeta ||
+          item.kind !== 'user' ||
+          item.meta === null ||
+          ALWAYS_VISIBLE_META.has(item.meta.kind)
       )
     : []
   return (
