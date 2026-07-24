@@ -1,0 +1,91 @@
+<!-- pilot:begin -->
+이 프로젝트는 Followingseas Rutter의 규약을 따른다. 아래는 합성된 규약 전문이다.
+
+## 핵심 규칙
+
+- [warn] 모든 규약 문서에는 왜(Why)를 함께 적는다.
+  - Why: Why 없는 규칙은 지켜지지 않는다 — 사람과 AI가 같은 이유 체계를 공유해야 규약 준수율이 오른다.
+- [info] 문서는 사람이 읽기 좋게 쓰되, AI 에이전트가 그대로 실행할 수 있을 만큼 구체적으로 쓴다.
+  - Why: 사람용 문서와 기계용 정책이 갈라지면 어느 한쪽이 낡는다 — 같은 문서가 두 독자를 섬겨야 한다.
+- [warn] 조직 구조가 바뀌면 docs/maps의 지도를 먼저 갱신한다.
+  - Why: 낡은 지도는 좌초를 부른다 — 지도가 현행을 반영해야 나머지 문서와 자동화가 신뢰를 얻는다.
+- [error] 작업 브랜치는 feature/<이름> 형식을 사용한다.
+  - Why: GitHub Flow(main 단일 브랜치, PR 머지)의 전제 조건 — 브랜치 이름이 일관돼야 리뷰·추적·자동화 분기가 일관된다. PR 머지 여부는 저장소 보호 규칙이 담당하고, 이 rule은 기계 검증 가능한 이름 규칙만 검사한다.
+- [warn] 커밋 메시지는 한글로 작성한다 (코드 식별자·conventional commits 타입은 영어).
+  - Why: 조직의 일차 언어로 맥락을 남겨야 사람과 AI 모두 이유를 빠르게 파악한다. PR·문서의 한글 원칙은 docs.dual-audience 등 문서 규약이 담당한다.
+
+# Followingseas Rutter — Pilot 합성 컨텍스트
+
+> pilot apply가 재생성하는 파일. 직접 수정하지 마세요.
+
+---
+<!-- source: followingseas · scope: organization · key: docs/conventions/documentation.md -->
+
+# 문서 작성 규약
+
+## Why
+
+이 지침서의 문서는 사람과 AI 에이전트가 함께 읽는다. 어느 한쪽만을 위한 문서는 반드시 낡는다 — 사람이 이해할 이유(Why)와 에이전트가 실행할 구체성(How)이 한 문서에 같이 있어야 규약이 실제로 지켜진다.
+
+## 규칙
+
+- 모든 규약 문서에는 **Why 섹션**을 둔다. 규칙의 배경이 없으면 예외 상황에서 잘못 적용된다.
+- 사람이 읽기 좋게 쓰되, 에이전트가 그대로 따를 수 있을 만큼 구체적으로 쓴다 (명령·경로·형식을 명시).
+- 조직 구조가 바뀌면 `docs/maps/`의 지도를 먼저 갱신한 뒤 나머지 문서를 고친다.
+- 기계 검증이 가능한 규칙은 `policies/`의 PolicySet(rule id·level·statement·rationale·checks)으로도 등록한다. 문서는 설명을, PolicySet은 검증을 맡는다.
+
+
+---
+<!-- source: followingseas · scope: organization · key: docs/conventions/shipshape.md -->
+
+# 저장소 위생 (repo hygiene)
+
+> **적용 범위**: 이 규약은 **제품 저장소**(대개 OSS로 공개되는 것)를 위한 것이다. 도구를 호스팅하는 private 운영 저장소는 이 규약의 *대상*이 아니라 잡동사니를 옮겨 담는 *목적지*다 — 자기가 존재 이유인 도구를 비우라는 뜻이 아니다. 또한 이것은 사람·에이전트의 **판단형 가이드**이며, 기계 검증(PolicySet check) 대상이 아니라 문서(convention)로 둔다.
+
+## Why
+
+이 조직의 제품 저장소는 대부분 OSS로 공개된다. 제품과 무관한 잡동사니가 섞이면 기여자가 무엇이 제품이고 무엇이 노이즈인지 구분하기 어려워지고, 공개 저장소의 신호 대 잡음비가 떨어진다. 저장소는 "이 제품을 이해하고 기여하는 데 필요한 것"만 담아야 한다.
+
+## 제품 저장소에 두지 않는 것
+
+- **인프라·운영(ops) 전용 도구** — 거버넌스 점검 스크립트, 배포·레지스트리 조작 등 특정 인프라에만 쓰이는 것. 개인 dotfiles나 private 운영 저장소로 분리한다.
+- **AI 에이전트의 세션별 작업 노트·휘발성 컨텍스트·내부 히스토리 덤프.**
+- **특정 사용자 환경에만 유효한 로컬 설정.**
+
+## 제품 저장소에 두는 것 (위 금지에 해당하지 않음)
+
+- **CI 워크플로·린트·포맷 설정** 등 저장소가 실제로 쓰는 자동화.
+- **`CLAUDE.md`·`AGENTS.md`** 등 에이전트 작업 지침. 단 내용은 손으로 유지하지 말고 rutter가 렌더한 것(`pilot apply`)을 우선한다.
+- **설계 결정 근거(ADR)·아키텍처 문서.** 이건 잡음이 아니라 제품의 **왜(Why)** 다 — [문서 작성 규약](documentation.md)의 정신과 같다. "context·history를 넣지 마라"가 설계 이유까지 지우는 쪽으로 해석되면 안 된다.
+
+## 판단 기준
+
+한 파일이 위생 대상인지 헷갈리면 이렇게 묻는다 — **"이 저장소를 처음 보는 기여자가 제품을 이해하거나 기여하는 데 이게 필요한가?"** 필요하면 남기고, 특정 운영자·AI 세션·인프라에만 쓸모 있으면 밖으로 뺀다.
+
+
+---
+<!-- source: followingseas · scope: organization · key: docs/maps/projects.md -->
+
+# 조직 저장소 조망
+
+Followingseas 조직의 저장소 지도다. 구조가 바뀌면 이 문서를 먼저 갱신한다.
+
+| 저장소 | 성격 | 설명 |
+|--------|------|------|
+| [Wake](https://github.com/followingseas/wake) | 제품 (Electron) | Claude Code 세션 항적 뷰어 — 지난 대화 열람·이어가기·fork |
+| [Pilot](https://github.com/followingseas/pilot) | 제품 (CLI·MCP) | rutter 런타임 — 규약·지식을 AI 에이전트에 제공 |
+| [Rutter](https://github.com/followingseas/rutter) | 지침서 | 조직 공용 규약(conventions)과 조망 지도(maps), 검증 가능한 정책(policies). Pilot의 레퍼런스 패키지 |
+| [.github](https://github.com/followingseas/.github) | 조직 대문 | 프로필 README (다국어) |
+| [followingseas.github.io](https://github.com/followingseas/followingseas.github.io) | 랜딩 | 조직 홈페이지 |
+| .github-private | 내부 | 브랜드 원본·내부 문서 (private) |
+
+## 워크플로우
+
+GitHub Flow(main 단일 브랜치)를 전 저장소 공통으로 사용한다. 기여 절차와 커밋 규칙은 [조직 기여 안내](https://github.com/followingseas/.github/blob/main/CONTRIBUTING.md)를 따른다.
+
+
+
+## Source provenance
+- package: Followingseas Rutter@2.0.0
+- digest: git:c8c6e0314f2126876c51d81ebe8c25eae4c35bbd
+<!-- pilot:end -->
