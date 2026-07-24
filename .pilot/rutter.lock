@@ -1,0 +1,20 @@
+apiVersion: rutter.followingseas.dev/v1
+kind: Lock
+release:
+  name: Followingseas Rutter
+  package: Followingseas Rutter
+  version: 2.0.0
+  revision: 2
+resolved:
+  sources:
+    - id: followingseas
+      kind: git
+      location: https://github.com/followingseas/rutter
+      digest: git:c8c6e0314f2126876c51d81ebe8c25eae4c35bbd
+  dependencies: []
+values:
+  files: []
+  effectiveDigest: sha256:8a810af985bffed434b03b4d0eed1502ddd207334bd908129e1ba047e78b4147
+lockedFields:
+  - /security/signing/required
+generatedAt: 2026-07-24T16:20:13.237Z
