@@ -7,8 +7,8 @@
   - Why: Why 없는 규칙은 지켜지지 않는다 — 사람과 AI가 같은 이유 체계를 공유해야 규약 준수율이 오른다.
 - [info] 문서는 사람이 읽기 좋게 쓰되, AI 에이전트가 그대로 실행할 수 있을 만큼 구체적으로 쓴다.
   - Why: 사람용 문서와 기계용 정책이 갈라지면 어느 한쪽이 낡는다 — 같은 문서가 두 독자를 섬겨야 한다.
-- [warn] 조직 구조가 바뀌면 docs/maps의 지도를 먼저 갱신한다.
-  - Why: 낡은 지도는 좌초를 부른다 — 지도가 현행을 반영해야 나머지 문서와 자동화가 신뢰를 얻는다.
+- [warn] 조직 구조가 바뀌면(저장소 추가·폐지·성격 변경) rutter의 docs/maps 지도를 먼저 갱신한다.
+  - Why: 낡은 지도는 좌초를 부른다 — 지도가 현행을 반영해야 나머지 문서와 자동화가 신뢰를 얻는다. 지도 자체는 rutter 저장소에서 관리하며 각 저장소로 내려보내지 않는다.
 - [error] 작업 브랜치는 feature/<이름> 형식을 사용한다.
   - Why: GitHub Flow(main 단일 브랜치, PR 머지)의 전제 조건 — 브랜치 이름이 일관돼야 리뷰·추적·자동화 분기가 일관된다. PR 머지 여부는 저장소 보호 규칙이 담당하고, 이 rule은 기계 검증 가능한 이름 규칙만 검사한다.
 - [warn] 커밋 메시지는 한글로 작성한다 (코드 식별자·conventional commits 타입은 영어).
@@ -63,29 +63,8 @@
 한 파일이 위생 대상인지 헷갈리면 이렇게 묻는다 — **"이 저장소를 처음 보는 기여자가 제품을 이해하거나 기여하는 데 이게 필요한가?"** 필요하면 남기고, 특정 운영자·AI 세션·인프라에만 쓸모 있으면 밖으로 뺀다.
 
 
----
-<!-- source: followingseas · scope: organization · key: docs/maps/projects.md -->
-
-# 조직 저장소 조망
-
-Followingseas 조직의 저장소 지도다. 구조가 바뀌면 이 문서를 먼저 갱신한다.
-
-| 저장소 | 성격 | 설명 |
-|--------|------|------|
-| [Wake](https://github.com/followingseas/wake) | 제품 (Electron) | Claude Code 세션 항적 뷰어 — 지난 대화 열람·이어가기·fork |
-| [Pilot](https://github.com/followingseas/pilot) | 제품 (CLI·MCP) | rutter 런타임 — 규약·지식을 AI 에이전트에 제공 |
-| [Rutter](https://github.com/followingseas/rutter) | 지침서 | 조직 공용 규약(conventions)과 조망 지도(maps), 검증 가능한 정책(policies). Pilot의 레퍼런스 패키지 |
-| [.github](https://github.com/followingseas/.github) | 조직 대문 | 프로필 README (다국어) |
-| [followingseas.github.io](https://github.com/followingseas/followingseas.github.io) | 랜딩 | 조직 홈페이지 |
-| .github-private | 내부 | 브랜드 원본·내부 문서 (private) |
-
-## 워크플로우
-
-GitHub Flow(main 단일 브랜치)를 전 저장소 공통으로 사용한다. 기여 절차와 커밋 규칙은 [조직 기여 안내](https://github.com/followingseas/.github/blob/main/CONTRIBUTING.md)를 따른다.
-
-
 
 ## Source provenance
 - package: Followingseas Rutter@2.0.0
-- digest: git:c8c6e0314f2126876c51d81ebe8c25eae4c35bbd
+- digest: git:72a2748286b1ea5d010e243e6be363307622dbca
 <!-- pilot:end -->

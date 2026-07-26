@@ -2,9 +2,9 @@ apiVersion: rutter.followingseas.dev/v1
 kind: Release
 metadata:
   name: Followingseas Rutter
-  revision: 2
+  revision: 3
   status: deployed
-  generatedAt: 2026-07-24T16:20:13.238Z
+  generatedAt: 2026-07-26T02:54:55.332Z
 spec:
   package:
     name: Followingseas Rutter
@@ -16,12 +16,12 @@ spec:
     - copilot
 artifacts:
   - path: .pilot/context.md
-    sha256: 1160aead3e566775a78fed502ba864c2808f8341aa3b377bbcc353af9537ec2d
+    sha256: 9178198fceb74a0aef3b9d9895ddf46619c9e54a19bf24070976252602fab19c
   - path: CLAUDE.md
-    sha256: 42d89a79c8b0915ac8bd2c205d049302448c813d013e0235b452bba8d9f3f888
+    sha256: 4c24e5521a035f8d70b3a2a5ec423a7049df87d40f5e9d0dbcffc3df357bba95
   - path: AGENTS.md
-    sha256: cc1af49c36f47ac97febec4381093d3abbc1de1eb0bb1c9353df7507fe82cdf4
+    sha256: f30b7a5d9b9314425d8f869a87a93cfd5c59389d3515b76bd2d124e8ab03d19a
   - path: .github/copilot-instructions.md
-    sha256: 13a5e8bd4d9a3ec56edf501288d48c45d447e85f41a252bfbe573dfed16d26c3
+    sha256: cf472e78dbf0e35f1de5fa1d853b9d25ffc74347fc567e24a2ee38805ffcfe0b
 history:
-  previousRevision: 1
+  previousRevision: 2
