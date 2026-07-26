@@ -4,17 +4,17 @@ release:
   name: Followingseas Rutter
   package: Followingseas Rutter
   version: 2.0.0
-  revision: 2
+  revision: 3
 resolved:
   sources:
     - id: followingseas
       kind: git
       location: https://github.com/followingseas/rutter
-      digest: git:c8c6e0314f2126876c51d81ebe8c25eae4c35bbd
+      digest: git:72a2748286b1ea5d010e243e6be363307622dbca
   dependencies: []
 values:
   files: []
   effectiveDigest: sha256:8a810af985bffed434b03b4d0eed1502ddd207334bd908129e1ba047e78b4147
 lockedFields:
   - /security/signing/required
-generatedAt: 2026-07-24T16:20:13.237Z
+generatedAt: 2026-07-26T02:54:55.331Z
