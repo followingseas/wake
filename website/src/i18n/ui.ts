@@ -28,7 +28,7 @@ export const ui = {
     'feature3.title': '그 자리에서 다시 시작',
     'feature3.body':
       '세션의 원래 작업 디렉토리에서 <code>claude --resume</code>으로 이어가고, <code>--fork-session</code>으로 원본을 보존한 채 새 항로로 분기합니다.',
-    'feature3.alt': 'Wake 이어가기와 Fork 메뉴',
+    'feature3.alt': 'Wake 세션 헤더 — 터미널에서 이어가기 · Fork로 열기 버튼',
     'grid.title': '이런 것도 챙겼습니다',
     'grid.local.title': '100% 로컬',
     'grid.local.body': '대화 기록은 어디로도 전송되지 않습니다.',
@@ -73,7 +73,7 @@ export const ui = {
     'feature3.title': 'Pick up right where you stopped',
     'feature3.body':
       "Resume with <code>claude --resume</code> in the session's original working directory, or branch off safely with <code>--fork-session</code>.",
-    'feature3.alt': 'Wake resume and fork menu',
+    'feature3.alt': 'Resume and fork buttons in a Wake session header',
     'grid.title': 'Also included',
     'grid.local.title': '100% local',
     'grid.local.body': 'Your conversations never leave your machine.',

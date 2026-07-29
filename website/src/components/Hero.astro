@@ -18,7 +18,7 @@ const t = useTranslations(locale)
       {t('hero.headline1')}<br />
       <span class="grad">{t('hero.headline2')}</span>
     </h1>
-    <p class="sub">{t('hero.sub1')}<br />{t('hero.sub2')}</p>
+    <p class="sub">{t('hero.sub1')} <br />{t('hero.sub2')}</p>
     <div class="cta">
       <a
         class="btn btn-primary"
@@ -82,11 +82,12 @@ const t = useTranslations(locale)
   }
 
   h1 {
-    font-size: clamp(34px, 6vw, 54px);
+    font-size: clamp(30px, 6vw, 54px);
     font-weight: 800;
     line-height: 1.2;
     letter-spacing: -0.02em;
     margin: 0;
+    word-break: keep-all;
   }
 
   .grad {

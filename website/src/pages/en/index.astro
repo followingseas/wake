@@ -7,8 +7,10 @@ import FeatureRow from '../../components/FeatureRow.astro'
 import FeatureGrid from '../../components/FeatureGrid.astro'
 import DownloadCta from '../../components/DownloadCta.astro'
 import Footer from '../../components/Footer.astro'
-import heroImage from '../../assets/hero.png'
-import settingsImage from '../../assets/settings.png'
+import feature1 from '../../assets/feature1.png'
+import feature2 from '../../assets/feature2.png'
+import feature3 from '../../assets/feature3.png'
+
 ---
 
 <Base locale="en">
@@ -18,10 +20,10 @@ import settingsImage from '../../assets/settings.png'
   </TopBand>
   <main>
     <div class="container" id="features">
-      {/* TODO: 기능별 전용 스크린샷 촬영 후 교체 (대화 클로즈업 / 사이드바 검색 / resume·fork 메뉴) */}
-      <FeatureRow locale="en" n={1} image={heroImage} />
-      <FeatureRow locale="en" n={2} image={heroImage} reverse />
-      <FeatureRow locale="en" n={3} image={settingsImage} />
+      
+      <FeatureRow locale="en" n={1} image={feature1} />
+      <FeatureRow locale="en" n={2} image={feature2} reverse />
+      <FeatureRow locale="en" n={3} image={feature3} />
     </div>
     <FeatureGrid locale="en" />
     <DownloadCta locale="en" />
