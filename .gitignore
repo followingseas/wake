@@ -26,3 +26,4 @@ npm-debug.log*
 
 # 캐시
 .eslintcache
+.superpowers/
