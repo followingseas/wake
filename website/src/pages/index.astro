@@ -3,7 +3,12 @@ import Base from '../layouts/Base.astro'
 import TopBand from '../components/TopBand.astro'
 import Header from '../components/Header.astro'
 import Hero from '../components/Hero.astro'
+import FeatureRow from '../components/FeatureRow.astro'
+import FeatureGrid from '../components/FeatureGrid.astro'
+import DownloadCta from '../components/DownloadCta.astro'
 import Footer from '../components/Footer.astro'
+import heroImage from '../assets/hero.png'
+import settingsImage from '../assets/settings.png'
 ---
 
 <Base locale="ko">
@@ -11,6 +16,15 @@ import Footer from '../components/Footer.astro'
     <Header locale="ko" />
     <Hero locale="ko" />
   </TopBand>
-  <main></main>
+  <main>
+    <div class="container" id="features">
+      {/* TODO: 기능별 전용 스크린샷 촬영 후 교체 (대화 클로즈업 / 사이드바 검색 / resume·fork 메뉴) */}
+      <FeatureRow locale="ko" n={1} image={heroImage} />
+      <FeatureRow locale="ko" n={2} image={heroImage} reverse />
+      <FeatureRow locale="ko" n={3} image={settingsImage} />
+    </div>
+    <FeatureGrid locale="ko" />
+    <DownloadCta locale="ko" />
+  </main>
   <Footer locale="ko" />
 </Base>
