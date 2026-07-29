@@ -1,0 +1,59 @@
+---
+import type { Locale } from '../i18n/ui'
+import { useTranslations } from '../i18n/ui'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const t = useTranslations(locale)
+---
+
+<footer>
+  <div class="container inner">
+    <span>Wake · MIT License · © followingseas</span>
+    <nav>
+      <a href="https://github.com/followingseas/wake" target="_blank" rel="noopener noreferrer"
+        >GitHub</a
+      >
+      <a
+        href="https://github.com/followingseas/wake/issues"
+        target="_blank"
+        rel="noopener noreferrer">{t('footer.issues')}</a
+      >
+      <a
+        href="https://github.com/followingseas/wake/releases"
+        target="_blank"
+        rel="noopener noreferrer">{t('footer.releases')}</a
+      >
+    </nav>
+  </div>
+</footer>
+
+<style>
+  footer {
+    border-top: 1px solid var(--line);
+    margin-top: 96px;
+  }
+
+  .inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 28px;
+    padding-bottom: 36px;
+    font-size: 13px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  nav {
+    display: flex;
+    gap: 18px;
+  }
+
+  a:hover {
+    color: var(--foam);
+  }
+</style>

@@ -1,4 +1,11 @@
 ---
+import Base from '../layouts/Base.astro'
+import Header from '../components/Header.astro'
+import Footer from '../components/Footer.astro'
 ---
 
-<html lang="ko"><body><h1>Wake</h1></body></html>
+<Base locale="ko">
+  <Header locale="ko" />
+  <main></main>
+  <Footer locale="ko" />
+</Base>
