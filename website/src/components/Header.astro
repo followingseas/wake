@@ -1,0 +1,78 @@
+---
+import { getRelativeLocaleUrl } from 'astro:i18n'
+import type { Locale } from '../i18n/ui'
+import { useTranslations } from '../i18n/ui'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const t = useTranslations(locale)
+const base = import.meta.env.BASE_URL
+const faviconHref = base.endsWith('/') ? `${base}favicon.svg` : `${base}/favicon.svg`
+const langHref = locale === 'ko' ? getRelativeLocaleUrl('en') : getRelativeLocaleUrl('ko')
+const langLabel = locale === 'ko' ? 'EN' : 'KO'
+---
+
+<header class="container">
+  <a class="brand" href={getRelativeLocaleUrl(locale)}>
+    <img src={faviconHref} alt="" width="26" height="26" />
+    <span>Wake</span>
+  </a>
+  <nav>
+    <a href="#features">{t('nav.features')}</a>
+    <a href="#download">{t('nav.download')}</a>
+    <a
+      class="gh"
+      href="https://github.com/followingseas/wake"
+      target="_blank"
+      rel="noopener noreferrer">GitHub ★</a
+    >
+    <a class="lang" href={langHref}>{langLabel}</a>
+  </nav>
+</header>
+
+<style>
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 22px;
+    padding-bottom: 22px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 800;
+    font-size: 18px;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    font-size: 14px;
+    color: var(--text-mid);
+  }
+
+  nav a:hover {
+    color: var(--foam);
+  }
+
+  .gh,
+  .lang {
+    border: 1px solid var(--line);
+    padding: 6px 13px;
+    border-radius: 7px;
+  }
+
+  @media (max-width: 640px) {
+    nav a:not(.gh):not(.lang) {
+      display: none;
+    }
+  }
+</style>
