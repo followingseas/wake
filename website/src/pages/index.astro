@@ -1,11 +1,16 @@
 ---
 import Base from '../layouts/Base.astro'
+import TopBand from '../components/TopBand.astro'
 import Header from '../components/Header.astro'
+import Hero from '../components/Hero.astro'
 import Footer from '../components/Footer.astro'
 ---
 
 <Base locale="ko">
-  <Header locale="ko" />
+  <TopBand>
+    <Header locale="ko" />
+    <Hero locale="ko" />
+  </TopBand>
   <main></main>
   <Footer locale="ko" />
 </Base>

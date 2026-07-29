@@ -1,0 +1,156 @@
+---
+import { Image } from 'astro:assets'
+import type { Locale } from '../i18n/ui'
+import { useTranslations } from '../i18n/ui'
+import heroImage from '../assets/hero.png'
+import { version } from '../../../package.json'
+
+interface Props {
+  locale: Locale
+}
+const { locale } = Astro.props
+const t = useTranslations(locale)
+---
+
+<section class="hero">
+  <div class="container inner">
+    <h1>
+      {t('hero.headline1')}<br />
+      <span class="grad">{t('hero.headline2')}</span>
+    </h1>
+    <p class="sub">{t('hero.sub1')}<br />{t('hero.sub2')}</p>
+    <div class="cta">
+      <a
+        class="btn btn-primary"
+        href="https://github.com/followingseas/wake/releases/latest"
+        target="_blank"
+        rel="noopener noreferrer">↓ {t('hero.ctaDownload')}</a
+      >
+      <a
+        class="btn btn-ghost"
+        href="https://github.com/followingseas/wake"
+        target="_blank"
+        rel="noopener noreferrer">{t('hero.ctaGithub')}</a
+      >
+    </div>
+    <p class="meta">
+      <span id="version-badge" class="badge">v{version}</span>
+      <span>·</span>
+      <span>{t('hero.platform')}</span>
+      <span>·</span>
+      <span>MIT</span>
+    </p>
+    <div class="shot">
+      <Image
+        src={heroImage}
+        alt={t('hero.screenshotAlt')}
+        widths={[640, 960, 1280]}
+        sizes="(max-width: 860px) 100vw, 860px"
+        loading="eager"
+        fetchpriority="high"
+      />
+    </div>
+  </div>
+</section>
+
+<script>
+  const KEY = 'wake:latest-tag'
+  const el = document.getElementById('version-badge')
+  const cached = sessionStorage.getItem(KEY)
+  if (cached && el) el.textContent = cached
+  else
+    fetch('https://api.github.com/repos/followingseas/wake/releases/latest', {
+      headers: { Accept: 'application/vnd.github+json' }
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => {
+        if (!d?.tag_name) return
+        sessionStorage.setItem(KEY, d.tag_name)
+        if (el) el.textContent = d.tag_name
+      })
+      .catch(() => {})
+</script>
+
+<style>
+  .hero {
+    text-align: center;
+  }
+
+  .inner {
+    position: relative;
+    padding-top: 64px;
+  }
+
+  h1 {
+    font-size: clamp(34px, 6vw, 54px);
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .grad {
+    background: linear-gradient(90deg, var(--foam), var(--bright), var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  @media (forced-colors: active) {
+    .grad {
+      background: none;
+      color: CanvasText;
+    }
+  }
+
+  .sub {
+    color: var(--text-mid);
+    font-size: 17px;
+    margin: 20px auto 0;
+    max-width: 720px;
+  }
+
+  .cta {
+    margin-top: 30px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .meta {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 18px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .badge {
+    border: 1px solid rgba(127, 209, 219, 0.4);
+    border-radius: 999px;
+    padding: 2px 12px;
+    color: var(--bright);
+    font-weight: 600;
+  }
+
+  .shot {
+    margin: 48px auto 0;
+    max-width: 860px;
+    border: 1px solid rgba(127, 209, 219, 0.3);
+    border-bottom: none;
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+    box-shadow:
+      0 -2px 50px rgba(127, 209, 219, 0.14),
+      0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  @media (max-width: 640px) {
+    .sub :global(br) {
+      display: none;
+    }
+  }
+</style>

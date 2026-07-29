@@ -1,0 +1,30 @@
+---
+---
+
+<div class="topband">
+  <svg class="wave" aria-hidden="true" viewBox="0 0 400 30" preserveAspectRatio="none">
+    <path d="M0 15 Q 50 0 100 15 T 200 15 T 300 15 T 400 15 V30 H0 Z"></path>
+  </svg>
+  <slot />
+</div>
+
+<style>
+  .topband {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(172deg, var(--deep) 0%, var(--deep-2) 55%, var(--surface) 100%);
+  }
+
+  .wave {
+    position: absolute;
+    bottom: 90px;
+    left: 0;
+    width: 100%;
+    height: 46px;
+    opacity: 0.08;
+  }
+
+  .wave path {
+    fill: var(--bright);
+  }
+</style>
