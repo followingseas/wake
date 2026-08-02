@@ -1,7 +1,7 @@
 ---
-import { getCollection } from 'astro:content'
 import type { Locale } from '../i18n/ui'
 import { useTranslations } from '../i18n/ui'
+import { loadChangelog } from '../lib/changelog'
 
 interface Props {
   locale: Locale
@@ -9,39 +9,9 @@ interface Props {
 const { locale } = Astro.props
 const t = useTranslations(locale)
 
-/** 최신 버전이 앞에 오도록 semver 비교. */
-function byVersionDesc(a: string, b: string): number {
-  const pa = a.split('.').map(Number)
-  const pb = b.split('.').map(Number)
-  for (let i = 0; i < 3; i += 1) {
-    if (pa[i] !== pb[i]) return pb[i] - pa[i]
-  }
-  return 0
-}
+const releases = await loadChangelog(locale)
 
-// 엔트리 id는 'ko/0.6.0' 형태다 (content.config.ts 참고).
-const entries = await getCollection('changelog', (entry) => entry.id.startsWith(`${locale}/`))
-
-// 날짜가 아니라 버전으로 정렬한다 — v0.4.0과 v0.4.1처럼 같은 날 나온 릴리스가 있다.
-entries.sort((a, b) => byVersionDesc(a.data.version, b.data.version))
-
-/**
- * heading id 앞에 버전을 붙여 문서 안에서 유일하게 만든다.
- *
- * 릴리스 여덟 개가 한 페이지에 모이는데 '새 기능'·'버그 수정'은 여러 릴리스에 반복 등장하고,
- * Astro가 붙이는 자동 id는 파일 단위로만 유일하다. Astro의 heading id 생성은 사용자
- * rehype 플러그인보다 뒤에 실행되므로 플러그인으로는 손댈 수 없어 렌더 결과에서 바꾼다.
- */
-function scopeHeadingIds(html: string, version: string): string {
-  return html.replace(/<(h[1-6]) id="/g, `<$1 id="v${version}-`)
-}
-
-const releases = entries.map((entry) => ({
-  ...entry.data,
-  html: scopeHeadingIds(entry.rendered?.html ?? '', entry.data.version)
-}))
-
-// frontmatter의 date는 UTC 자정으로 파싱되므로, 포맷도 UTC로 고정해야 하루 밀리지 않는다.
+// date는 UTC 자정으로 파싱되므로, 포맷도 UTC로 고정해야 하루 밀리지 않는다.
 const formatDate = new Intl.DateTimeFormat(locale === 'ko' ? 'ko-KR' : 'en-US', {
   year: 'numeric',
   month: 'long',
