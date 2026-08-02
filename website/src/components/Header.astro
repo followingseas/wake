@@ -5,13 +5,19 @@ import { useTranslations } from '../i18n/ui'
 
 interface Props {
   locale: Locale
+  /** 현재 페이지의 로케일 홈 기준 경로. 생략하면 홈. 언어 전환 시 같은 페이지를 유지하는 데 쓴다. */
+  path?: string
 }
-const { locale } = Astro.props
+const { locale, path } = Astro.props
 const t = useTranslations(locale)
 const base = import.meta.env.BASE_URL
 const faviconHref = base.endsWith('/') ? `${base}favicon.svg` : `${base}/favicon.svg`
-const langHref = locale === 'ko' ? getRelativeLocaleUrl('en') : getRelativeLocaleUrl('ko')
+const langHref = getRelativeLocaleUrl(locale === 'ko' ? 'en' : 'ko', path)
 const langLabel = locale === 'ko' ? 'EN' : 'KO'
+// 홈 섹션 앵커는 절대 경로여야 한다 — 랜딩이 아닌 페이지에서 '#features'만 두면 갈 곳이 없다.
+const home = getRelativeLocaleUrl(locale)
+const changelogHref = getRelativeLocaleUrl(locale, 'changelog')
+const onChangelog = path === 'changelog'
 ---
 
 <header class="container">
@@ -20,8 +26,11 @@ const langLabel = locale === 'ko' ? 'EN' : 'KO'
     <span>Wake</span>
   </a>
   <nav>
-    <a href="#features">{t('nav.features')}</a>
-    <a href="#download">{t('nav.download')}</a>
+    <a href={`${home}#features`}>{t('nav.features')}</a>
+    <a href={`${home}#download`}>{t('nav.download')}</a>
+    <a class="changelog" href={changelogHref} aria-current={onChangelog ? 'page' : undefined}
+      >{t('nav.changelog')}</a
+    >
     <a
       class="gh"
       href="https://github.com/followingseas/wake"
@@ -70,8 +79,17 @@ const langLabel = locale === 'ko' ? 'EN' : 'KO'
     border-radius: 7px;
   }
 
+  .changelog[aria-current='page'] {
+    color: var(--foam);
+  }
+
+  /* 좁은 화면에서는 홈 섹션 앵커만 접는다 — Changelog는 독립 페이지라 남긴다. */
   @media (max-width: 640px) {
-    nav a:not(.gh):not(.lang) {
+    nav {
+      gap: 14px;
+    }
+
+    nav a:not(.gh):not(.lang):not(.changelog) {
       display: none;
     }
   }
