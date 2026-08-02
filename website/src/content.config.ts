@@ -17,8 +17,17 @@ const changelog = defineCollection({
   schema: z.object({
     /** 태그의 v를 뺀 semver. 예: '0.6.0' */
     version: z.string().regex(/^\d+\.\d+\.\d+$/),
-    /** 릴리스 발행일 (KST 기준) */
-    date: z.coerce.date(),
+    /**
+     * 릴리스 발행일 (KST 기준). `date: '2026-07-24'`처럼 **따옴표로 감싼** 날짜만 받는다.
+     *
+     * 따옴표를 빼면 YAML이 날짜 리터럴을 타임스탬프로 해석해 Date 객체가 넘어오고,
+     * `2026-07-19T00:30:00+09:00` 같은 값은 UTC로 환산되며 표시가 하루 밀린다.
+     * 문자열로 받아 UTC 자정으로 고정하면 빌드 머신의 타임존과 무관해진다.
+     */
+    date: z
+      .string("date는 따옴표로 감싼 'YYYY-MM-DD' 문자열이어야 합니다")
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "date는 'YYYY-MM-DD' 형식이어야 합니다")
+      .transform((value) => new Date(`${value}T00:00:00Z`)),
     /** 타임라인에서 버전 제목 아래 놓이는 한 줄 요약 */
     highlight: z.string()
   })
