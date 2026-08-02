@@ -7,11 +7,22 @@ import heroImage from '../assets/hero.png'
 
 interface Props {
   locale: Locale
+  /** 로케일 홈 기준 경로. 예: 'changelog'. 생략하면 로케일 홈을 가리킨다. */
+  path?: string
+  /** 생략하면 랜딩 기본값 */
+  title?: string
+  /** 생략하면 랜딩 기본값 */
+  description?: string
 }
-const { locale } = Astro.props
+const { locale, path, title, description } = Astro.props
 const t = useTranslations(locale)
 const base = import.meta.env.BASE_URL
-const canonical = getAbsoluteLocaleUrl(locale)
+const pageTitle = title ?? t('meta.title')
+const pageDescription = description ?? t('meta.description')
+// canonical·hreflang은 같은 path를 각 로케일에 적용해야 번역 관계가 성립한다.
+const canonical = getAbsoluteLocaleUrl(locale, path)
+const altKo = getAbsoluteLocaleUrl('ko', path)
+const altEn = getAbsoluteLocaleUrl('en', path)
 ---
 
 <!doctype html>
@@ -19,15 +30,15 @@ const canonical = getAbsoluteLocaleUrl(locale)
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{t('meta.title')}</title>
-    <meta name="description" content={t('meta.description')} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="ko" href={getAbsoluteLocaleUrl('ko')} />
-    <link rel="alternate" hreflang="en" href={getAbsoluteLocaleUrl('en')} />
-    <link rel="alternate" hreflang="x-default" href={getAbsoluteLocaleUrl('ko')} />
-    <meta property="og:title" content={t('meta.title')} />
-    <meta property="og:description" content={t('meta.description')} />
+    <link rel="alternate" hreflang="ko" href={altKo} />
+    <link rel="alternate" hreflang="en" href={altEn} />
+    <link rel="alternate" hreflang="x-default" href={altKo} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content="Wake" />
