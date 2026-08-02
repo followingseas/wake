@@ -5,15 +5,21 @@ import { z } from 'astro/zod'
 // 변경이력 컬렉션. 로케일별 하위 디렉토리에 릴리스 하나당 파일 하나를 둔다:
 //   src/content/changelog/ko/0.6.0.md
 //   src/content/changelog/en/0.6.0.md
-// 따라서 엔트리 id는 'ko/0.6.0' 형태이며, 로케일 필터는 id 접두사로 한다
-// (getChangelog 헬퍼 참고).
+// 엔트리 id는 확장자를 뗀 경로('ko/0.6.0')이고, 로케일 필터는 id 접두사로 한다
+// (lib/changelog.ts 참고).
 //
-// 릴리스를 낼 때마다 ko/en 두 파일을 함께 추가한다. 빠뜨려도 빌드는 통과하고
-// 해당 버전이 조용히 누락되므로, GitHub 릴리스 노트를 쓸 때 같이 챙긴다.
+// 릴리스를 낼 때마다 ko/en 두 파일을 함께 추가한다. 한쪽만 추가하면 loadChangelog가
+// 빌드를 세우므로 조용히 누락되지는 않는다.
 // 릴리스 노트의 설치 안내와 'Full Changelog' 링크는 여기에 옮기지 않는다 —
 // 페이지가 버전마다 GitHub 릴리스 링크를 따로 걸어준다.
 const changelog = defineCollection({
-  loader: glob({ base: './src/content/changelog', pattern: '**/*.md' }),
+  loader: glob({
+    base: './src/content/changelog',
+    pattern: '**/*.md',
+    // 기본 generateId는 파일명을 slug로 바꿔 '0.4.1'을 '041'로 만든다.
+    // 스키마 오류 메시지가 실제 파일을 가리키도록 경로를 그대로 쓴다.
+    generateId: ({ entry }) => entry.replace(/\.md$/, '')
+  }),
   schema: z.object({
     /** 태그의 v를 뺀 semver. 예: '0.6.0' */
     version: z.string().regex(/^\d+\.\d+\.\d+$/),

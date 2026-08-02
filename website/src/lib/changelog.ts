@@ -75,8 +75,18 @@ export async function loadChangelog(locale: Locale): Promise<Release[]> {
   return entries
     .filter((entry) => localeOf(entry) === locale)
     .sort((a, b) => byVersionDesc(a.data.version, b.data.version))
-    .map((entry) => ({
-      ...entry.data,
-      html: scopeHeadingIds(entry.rendered?.html ?? '', entry.data.version)
-    }))
+    .map((entry) => {
+      const html = entry.rendered?.html
+      // 빈 본문을 그냥 통과시키면 해당 릴리스가 제목만 남은 채 배포된다 —
+      // 로케일 불일치와 마찬가지로 눈치채기 어려우니 여기서도 빌드를 세운다.
+      if (!html) {
+        throw new Error(
+          `변경이력 ${entry.id}.md의 본문이 비어 있습니다 — frontmatter 아래에 변경 내용을 적으세요.`
+        )
+      }
+      return {
+        ...entry.data,
+        html: scopeHeadingIds(html, entry.data.version)
+      }
+    })
 }
