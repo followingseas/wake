@@ -29,7 +29,8 @@ Everything happens on your local file system. The only network request is the up
 ## Features
 
 - **📜 Read conversations** — Your input renders as terminal prompts, responses as typeset markdown (tables, syntax highlighting). Tool calls, thinking blocks, and system messages stay collapsed so the flow of the conversation is never interrupted.
-- **🔍 Browse sessions** — Sessions grouped by project, with titles, last activity, and message counts. Search everything with `⌘F`.
+- **🔍 Browse sessions** — Sessions grouped by project, with titles, last activity, and message counts. Filter them with `⌘F`.
+- **🔦 Search message contents** — `⌘⇧F` searches what was actually said, across every project. One half-remembered word finds the session and the message, and clicking a result jumps straight to it.
 - **⏩ Resume in terminal** — Runs `claude --resume` in the session's original working directory.
 - **🔱 Open as fork** — Branches off with `--fork-session`, preserving the original.
 - **🖥 Terminal of your choice** — Defaults to the OS terminal; pick iTerm2 or any detected terminal in Settings.
@@ -82,7 +83,8 @@ npm run build:linux   # Linux (AppImage, deb)
 | Read a session | Expand a project in the sidebar → click a session |
 | Expand details | Click a tool call (`▸ Bash …`) or a `Thinking` row |
 | Resume / Fork | **Resume in terminal** / **Open as fork** buttons in the header |
-| Search | `⌘F` — matches session titles and first prompts |
+| Filter sessions | `⌘F` — matches session titles and first prompts |
+| Search contents | `⌘⇧F` — matches message text across every session; click a snippet to jump to it |
 | Settings | `⌘,` or the ⚙ button — language, terminal, text size, updates |
 | Delete | **Delete** button → confirm → moved to Trash |
 
@@ -90,8 +92,9 @@ npm run build:linux   # Linux (AppImage, deb)
 
 - Reads: `~/.claude/projects/<project>/<sessionId>.jsonl`
 - Viewing is strictly read-only. Original files are never modified.
-- The only write operation is deletion you explicitly request — and even that moves files to the Trash.
+- The only write to your original files is deletion you explicitly request — and even that moves files to the Trash.
 - Settings are stored in the standard app data path (`userData/settings.json`).
+- The content-search index lives at `userData/search-index.jsonl`. It holds only your prompts and the assistant's replies — never tool input or output — and never leaves your machine. Delete it and it rebuilds on the next launch.
 
 ## Known limitations
 
