@@ -1,9 +1,10 @@
 import { readdir, stat } from 'fs/promises'
 import { homedir } from 'os'
 import { basename, join } from 'path'
-import type { ProjectInfo, SessionMeta, WorktreeInfo } from '../../shared/types'
+import type { ProjectInfo, SessionMeta, SessionOrigin, WorktreeInfo } from '../../shared/types'
 import { forEachJsonlLine, readHead } from './jsonl'
 import { getMessage, isRealUserPrompt, summarize } from './entries'
+import { originFromEntrypoint } from './sessionOrigin'
 
 export function projectsRoot(): string {
   // CHV_DATA_DIR: 개발·데모용 데이터 디렉토리 오버라이드
@@ -26,12 +27,22 @@ async function detectRealPath(sessionFiles: string[]): Promise<string | null> {
   return null
 }
 
-// 실제 대화(사용자 프롬프트 또는 어시스턴트 메시지)가 있는 세션인지 확인한다.
-// 첫 실제 메시지를 찾는 즉시 스트리밍을 중단하므로, 대부분의 세션은 앞쪽 몇 KB만 읽는다.
-// listSessions의 messageCount > 0 필터와 동일한 판정 기준을 사용해 카운트가 어긋나지 않게 한다.
-async function hasRealMessage(filePath: string): Promise<boolean> {
+interface SessionHead {
+  hasRealMessage: boolean
+  origin: SessionOrigin
+}
+
+// 세션 목록에 필요한 두 가지를 한 번의 스트리밍으로 얻는다.
+// - hasRealMessage: 실제 대화(사용자 프롬프트 또는 어시스턴트 메시지)가 있는지. 첫 실제
+//   메시지를 찾는 즉시 중단하므로 대부분의 세션은 앞쪽 몇 KB만 읽는다. listSessions의
+//   messageCount > 0 필터와 판정 기준을 맞춰 카운트가 어긋나지 않게 한다.
+// - origin: 세션을 만든 주체. entrypoint는 첫 실제 메시지보다 앞서거나 같은 엔트리에 실려
+//   오므로, 중단 판정보다 먼저 읽어야 놓치지 않는다.
+async function scanSessionHead(filePath: string): Promise<SessionHead> {
   let found = false
+  let entrypoint: string | null = null
   await forEachJsonlLine(filePath, (entry) => {
+    if (entrypoint === null && typeof entry.entrypoint === 'string') entrypoint = entry.entrypoint
     if (entry.type === 'user') {
       if (isRealUserPrompt(entry)) {
         found = true
@@ -45,7 +56,7 @@ async function hasRealMessage(filePath: string): Promise<boolean> {
     }
     return undefined
   })
-  return found
+  return { hasRealMessage: found, origin: originFromEntrypoint(entrypoint) }
 }
 
 // Claude Code 워크트리(.claude/worktrees/<name>) 세션인지 판별한다.
@@ -78,14 +89,15 @@ export async function listProjects(): Promise<ProjectInfo[]> {
     if (!dirent.isDirectory()) continue
     const dirPath = join(root, dirent.name)
     const files = await readdir(dirPath).catch(() => [])
-    const sessionFiles: { path: string; mtimeMs: number }[] = []
+    const sessionFiles: { path: string; mtimeMs: number; origin: SessionOrigin }[] = []
     for (const file of files) {
       if (!file.endsWith('.jsonl')) continue
       const filePath = join(dirPath, file)
       const info = await stat(filePath).catch(() => null)
       if (!info || info.size === 0) continue
-      if (!(await hasRealMessage(filePath).catch(() => false))) continue
-      sessionFiles.push({ path: filePath, mtimeMs: info.mtimeMs })
+      const head = await scanSessionHead(filePath).catch(() => null)
+      if (!head?.hasRealMessage) continue
+      sessionFiles.push({ path: filePath, mtimeMs: info.mtimeMs, origin: head.origin })
     }
     if (sessionFiles.length === 0) continue
 
@@ -100,6 +112,7 @@ export async function listProjects(): Promise<ProjectInfo[]> {
         ? basename(realPath)
         : (dirent.name.split('-').filter(Boolean).pop() ?? dirent.name),
       sessionCount: sessionFiles.length,
+      userSessionCount: sessionFiles.filter((f) => f.origin === 'user').length,
       lastActiveAt: sessionFiles[0].mtimeMs,
       worktree: detectWorktree(dirent.name, realPath)
     })
@@ -132,10 +145,12 @@ async function readSessionMeta(
   let lastTimestamp: string | null = null
   let gitBranch: string | null = null
   let cwd: string | null = null
+  let entrypoint: string | null = null
   let userCount = 0
   const assistantMessageIds = new Set<string>()
 
   await forEachJsonlLine(filePath, (entry) => {
+    if (entrypoint === null && typeof entry.entrypoint === 'string') entrypoint = entry.entrypoint
     if (entry.type === 'ai-title' && typeof entry.aiTitle === 'string') {
       title = entry.aiTitle
       return
@@ -174,7 +189,8 @@ async function readSessionMeta(
     updatedAt: lastTimestamp ? Date.parse(lastTimestamp) : mtimeMs,
     gitBranch,
     cwd,
-    fileSize: size
+    fileSize: size,
+    origin: originFromEntrypoint(entrypoint)
   }
   metaCache.set(filePath, { mtimeMs, size, meta })
   return meta
