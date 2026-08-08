@@ -20,8 +20,6 @@ interface Props {
   onToggleProject: (projectId: string) => void
   onSelectSession: (session: SessionMeta) => void
   onSessionMenu: (session: SessionMeta) => void
-  onCollapseSidebar: () => void
-  onOpenContentSearch: () => void
   onResizeStart: (event: ReactMouseEvent) => void
 }
 
@@ -47,6 +45,15 @@ function matches(session: SessionMeta, query: string): boolean {
   return (
     session.title.toLowerCase().includes(lowered) ||
     (session.firstPrompt?.toLowerCase().includes(lowered) ?? false)
+  )
+}
+
+/** 폴더 이름이 걸리면 그 안의 세션은 제목과 무관하게 전부 보여준다 */
+function folderMatches(project: ProjectInfo, query: string): boolean {
+  const lowered = query.toLowerCase()
+  return (
+    project.name.toLowerCase().includes(lowered) ||
+    (project.worktree?.name.toLowerCase().includes(lowered) ?? false)
   )
 }
 
@@ -98,8 +105,6 @@ export function Sidebar({
   onToggleProject,
   onSelectSession,
   onSessionMenu,
-  onCollapseSidebar,
-  onOpenContentSearch,
   onResizeStart
 }: Props): ReactElement {
   const { t } = usePrefs()
@@ -108,74 +113,35 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
-      <div className="sidebar__titlebar">
-        <span className="sidebar__appname">Wake</span>
-        <button
-          className="sidebar__collapse"
-          onClick={onCollapseSidebar}
-          title={t('sidebar.collapse')}
-          aria-label={t('sidebar.collapse')}
-        >
-          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
-            <rect
-              x="1.5"
-              y="2.5"
-              width="13"
-              height="11"
-              rx="2"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-            />
-            <line x1="6" y1="2.5" x2="6" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
-          </svg>
-        </button>
-      </div>
       <div className="sidebar__search">
-        <div className="sidebar__search-row">
-          <input
-            ref={searchRef}
-            type="search"
-            placeholder={t('sidebar.search')}
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            spellCheck={false}
-          />
-          <button
-            className="sidebar__content-search"
-            onClick={onOpenContentSearch}
-            title={t('sidebar.contentSearch')}
-            aria-label={t('sidebar.contentSearch')}
-          >
-            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-              <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-              <line
-                x1="10.4"
-                y1="10.4"
-                x2="14"
-                y2="14"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-        </div>
+        <input
+          ref={searchRef}
+          type="search"
+          placeholder={t('sidebar.search')}
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          spellCheck={false}
+        />
       </div>
       <nav className="sidebar__list">
         {groups.map((group) => {
           const root = group.root
           const rootOpen = searching || expanded.has(root.id)
           const rootSessions = group.synthetic ? [] : sessions[root.id]
-          const rootVisible = searching
-            ? (rootSessions ?? []).filter((s) => matches(s, query.trim()))
-            : rootSessions
+          // 그룹 루트 이름이 걸리면 워크트리까지 통째로 보여준다
+          const groupMatched = searching && folderMatches(root, query.trim())
+          const rootVisible =
+            searching && !groupMatched
+              ? (rootSessions ?? []).filter((s) => matches(s, query.trim()))
+              : rootSessions
           const worktreeEntries = group.worktrees
             .map((wt) => {
               const wtSessions = sessions[wt.id]
-              const visible = searching
-                ? (wtSessions ?? []).filter((s) => matches(s, query.trim()))
-                : wtSessions
+              const wtMatched = groupMatched || folderMatches(wt, query.trim())
+              const visible =
+                searching && !wtMatched
+                  ? (wtSessions ?? []).filter((s) => matches(s, query.trim()))
+                  : wtSessions
               return { wt, visible }
             })
             .filter((entry) => !searching || (entry.visible?.length ?? 0) > 0)

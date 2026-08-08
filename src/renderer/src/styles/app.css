@@ -70,10 +70,99 @@ button {
 }
 
 /* ── 레이아웃 ────────────────────────────────────────────────── */
+/* 상단 바가 창 전체 폭을 가로지르고, 그 아래를 사이드바와 본문이 나눈다 */
 .app {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: var(--titlebar-height) 1fr;
   height: 100%;
+}
+
+/* ── 상단 바 ─────────────────────────────────────────────────── */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 84px; /* macOS 신호등 버튼 자리 */
+  padding-right: 12px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border-soft);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+/* 좌우를 같은 비율로 밀어 검색 필드가 창 중앙에 오게 한다 */
+.topbar__side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.topbar__appname {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.topbar__toggle {
+  -webkit-app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--text-3);
+  padding: 3px 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.topbar__toggle:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.topbar__search {
+  -webkit-app-region: no-drag;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: min(420px, 42vw);
+  height: 26px;
+  padding: 0 10px;
+  color: var(--text-3);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.topbar__search:hover {
+  border-color: var(--accent);
+  color: var(--text-2);
+}
+
+.topbar__search-label {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__search-key {
+  flex: none;
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  color: var(--text-3);
+  border: 1px solid var(--border-soft);
+  border-radius: 4px;
+  padding: 0 4px;
 }
 
 /* ── 사이드바 ────────────────────────────────────────────────── */
@@ -84,24 +173,6 @@ button {
   background: var(--bg-raised);
   border-right: 1px solid var(--border-soft);
   min-height: 0;
-}
-
-.sidebar__titlebar {
-  height: var(--titlebar-height);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding-left: 84px; /* macOS 신호등 버튼 자리 */
-  -webkit-app-region: drag;
-  user-select: none;
-}
-
-.sidebar__appname {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-3);
 }
 
 .sidebar__search {
@@ -309,11 +380,9 @@ button {
   justify-content: space-between;
   gap: 16px;
   padding: 14px 28px 14px 24px;
-  padding-top: calc(var(--titlebar-height) - 30px + 14px);
   border-bottom: 1px solid var(--border-soft);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(12px);
-  -webkit-app-region: drag;
 }
 
 .conversation__header button {
@@ -1145,28 +1214,6 @@ button {
   background: transparent;
 }
 
-/* ── 설정 ────────────────────────────────────────────────────── */
-.sidebar__titlebar {
-  justify-content: space-between;
-  padding-right: 10px;
-}
-
-.sidebar__collapse {
-  -webkit-app-region: no-drag;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-3);
-  padding: 3px 7px;
-  border-radius: 6px;
-  line-height: 1;
-}
-
-.sidebar__collapse:hover {
-  color: var(--text);
-  background: var(--surface);
-}
-
 /* ── 사이드바 리사이즈/접기 ──────────────────────────────────── */
 .sidebar__resizer {
   position: absolute;
@@ -1195,39 +1242,6 @@ body.is-resizing {
 
 .app.is-sidebar-collapsed .sidebar {
   display: none;
-}
-
-/* 접힘 상태의 펼치기 버튼 — 드래그 영역(헤더/빈 화면)의 자식으로 렌더링된다 */
-.sidebar-expand {
-  width: 28px;
-  height: 24px;
-  flex-shrink: 0;
-  align-self: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-3);
-  border-radius: 6px;
-  -webkit-app-region: no-drag;
-}
-
-.sidebar-expand:hover {
-  color: var(--accent);
-  background: var(--surface);
-}
-
-.conversation--empty {
-  position: relative;
-}
-
-.conversation--empty .sidebar-expand {
-  position: absolute;
-  top: 10px;
-  left: 84px;
-}
-
-.app.is-sidebar-collapsed .conversation__header {
-  padding-left: 84px; /* macOS 신호등 버튼 자리 */
 }
 
 .dialog--settings {
@@ -1503,158 +1517,111 @@ body.is-resizing {
   font-size: 13.8px;
 }
 
-/* ── 사이드바 내용 검색 진입 버튼 ────────────────────────────── */
-.sidebar__search-row {
+/* ── 대화 내용 검색 팔레트 ───────────────────────────────────── */
+/* 팔레트는 상단 바 바로 아래에서 내려온다. 뒤 화면은 가리되 어둡게 덮지는 않는다 */
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
   display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.sidebar__search-row input {
-  flex: 1;
-  min-width: 0;
-}
-
-.sidebar__content-search {
-  flex: none;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  width: 31px;
-  height: 31px;
-  color: var(--text-3);
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 7px;
+  padding-top: calc(var(--titlebar-height) + 6px);
 }
 
-.sidebar__content-search:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+.palette {
+  width: min(720px, calc(100vw - 48px));
+  max-height: calc(100vh - var(--titlebar-height) - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
 }
 
-/* ── 대화 내용 검색 화면 ─────────────────────────────────────── */
-/* 헤더는 conversation__header와 같은 타이틀바 보정을 쓴다 (macOS hiddenInset 신호등 자리) */
-.search-view__header {
+.palette__input-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 28px 14px 24px;
-  padding-top: calc(var(--titlebar-height) - 30px + 14px);
+  gap: 9px;
+  padding: 11px 14px;
+  color: var(--text-3);
   border-bottom: 1px solid var(--border-soft);
-  -webkit-app-region: drag;
 }
 
-.app.is-sidebar-collapsed .search-view__header {
-  padding-left: 84px; /* macOS 신호등 버튼 자리 */
-}
-
-.search-view__header input,
-.search-view__header button {
-  -webkit-app-region: no-drag;
-}
-
-.search-view__input {
+.palette__input {
   flex: 1;
   min-width: 0;
   font-family: var(--font-ui);
   font-size: 14px;
   color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 13px;
+  background: none;
+  border: none;
 }
 
-.search-view__input::placeholder {
-  color: var(--text-3);
-}
-
-.search-view__input:focus {
+.palette__input:focus {
   outline: none;
-  border-color: var(--accent);
 }
 
-.search-view__status {
-  padding: 14px clamp(20px, 4vw, 40px) 0;
-  font-size: 12px;
+.palette__input::placeholder {
   color: var(--text-3);
 }
 
-.search-view__results {
+.palette__status {
+  padding: 8px 14px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.palette__results {
   flex: 1;
-  overflow-y: auto;
   min-height: 0;
-  padding: 14px clamp(20px, 4vw, 40px) 80px;
+  overflow-y: auto;
+  padding-bottom: 6px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.palette__group {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 2px;
+  padding: 10px 14px 5px;
 }
 
-.search-hit {
-  /* 스크롤 컨테이너가 곧 flex 컨테이너라, 축소를 막지 않으면 카드가 납작하게 눌린다 */
-  flex: none;
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  background: var(--bg-raised);
-  overflow: hidden;
-}
-
-.search-hit__head {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  align-items: flex-start;
-  text-align: left;
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.search-hit__head:hover {
-  background: var(--surface-hover);
-}
-
-.search-hit__title {
-  font-size: 13.5px;
+.palette__group-title {
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.search-hit__meta {
-  font-size: 11px;
+.palette__group-meta {
+  font-size: 10.5px;
   color: var(--text-3);
 }
 
-.search-hit__snippets {
-  list-style: none;
-}
-
-.snippet {
+.palette .snippet {
   width: 100%;
   display: flex;
   gap: 10px;
   align-items: baseline;
   text-align: left;
-  padding: 9px 14px;
+  padding: 6px 14px;
   font-size: 12.5px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--text-2);
-  border-top: 1px solid var(--border-soft);
 }
 
-.search-hit__snippets li:first-child .snippet {
-  border-top: none;
-}
-
-.snippet:hover {
+.palette .snippet.is-active {
   background: var(--surface-hover);
   color: var(--text);
 }
 
 .snippet__role {
   flex: none;
-  min-width: 46px;
+  min-width: 44px;
   font-size: 10.5px;
   color: var(--text-3);
 }
@@ -1662,6 +1629,10 @@ body.is-resizing {
 .snippet__text {
   flex: 1;
   min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .snippet mark {
@@ -1671,8 +1642,7 @@ body.is-resizing {
   padding: 0 2px;
 }
 
-.search-hit__more,
-.search-view__truncated {
+.palette__truncated {
   padding: 9px 14px;
   font-size: 11px;
   color: var(--text-3);

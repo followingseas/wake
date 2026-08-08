@@ -29,8 +29,8 @@ Everything happens on your local file system. The only network request is the up
 ## Features
 
 - **📜 Read conversations** — Your input renders as terminal prompts, responses as typeset markdown (tables, syntax highlighting). Tool calls, thinking blocks, and system messages stay collapsed so the flow of the conversation is never interrupted.
-- **🔍 Browse sessions** — Sessions grouped by project, with titles, last activity, and message counts. Filter them with `⌘F`.
-- **🔦 Search message contents** — `⌘⇧F` searches what was actually said, across every project. One half-remembered word finds the session and the message, and clicking a result jumps straight to it.
+- **🔍 Browse sessions** — Sessions grouped by project, with titles, last activity, and message counts. Narrow the list with `⌘F` by title, first message, or folder name.
+- **🔦 Search message contents** — The search field up top (`⌘K`) searches what was actually said, across every project. One half-remembered word finds the session and the message, and picking a result jumps straight to it.
 - **⏩ Resume in terminal** — Runs `claude --resume` in the session's original working directory.
 - **🔱 Open as fork** — Branches off with `--fork-session`, preserving the original.
 - **🖥 Terminal of your choice** — Defaults to the OS terminal; pick iTerm2 or any detected terminal in Settings.
@@ -83,8 +83,8 @@ npm run build:linux   # Linux (AppImage, deb)
 | Read a session | Expand a project in the sidebar → click a session |
 | Expand details | Click a tool call (`▸ Bash …`) or a `Thinking` row |
 | Resume / Fork | **Resume in terminal** / **Open as fork** buttons in the header |
-| Filter sessions | `⌘F` — matches session titles and first prompts |
-| Search contents | `⌘⇧F` — matches message text across every session; click a snippet to jump to it |
+| Narrow the list | `⌘F` — matches session titles, first prompts, and folder names |
+| Search contents | `⌘K` — search field up top; `↑↓` to move, `↵` to open |
 | Settings | `⌘,` or the ⚙ button — language, terminal, text size, updates |
 | Delete | **Delete** button → confirm → moved to Trash |
 
