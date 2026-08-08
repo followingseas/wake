@@ -47,7 +47,8 @@ export function ConversationView({
       )
     : []
 
-  // 검색 결과에서 넘어온 아이템으로 스크롤한다 (강조 해제 시점은 App이 관리한다)
+  // 검색은 meta 없는 사용자 아이템과 어시스턴트 turn만 인덱싱하므로, showMeta 설정과
+  // 무관하게 대상 노드가 항상 그려져 있다. 강조 해제 시점은 App이 관리한다
   useEffect(() => {
     if (!highlightRef || !conversation) return
     // start 정렬 — 어시스턴트 턴은 화면보다 길 수 있어 center로 맞추면 강조 테두리가 화면 밖으로 나간다

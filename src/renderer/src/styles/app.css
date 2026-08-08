@@ -27,6 +27,8 @@
 
   --sidebar-width: 300px;
   --titlebar-height: 44px;
+  /* 검색 결과에서 이동해 온 메시지를 강조하는 시간 — App.tsx의 해제 타이머와 같아야 한다 */
+  --search-hit-duration: 3s;
 }
 
 * {
@@ -1676,14 +1678,16 @@ body.is-resizing {
   color: var(--text-3);
 }
 
-/* 검색 결과에서 이동해 온 메시지를 잠깐 강조한다 */
 .timeline [data-uuid] {
   scroll-margin-top: 20px;
 }
 
+/* 테두리를 정적으로도 두는 이유: prefers-reduced-motion이 애니메이션을 통째로 끄기 때문에,
+   키프레임 안에만 두면 그 사용자에게는 어느 메시지가 매칭됐는지 표시가 아예 사라진다 */
 .is-search-hit {
   border-radius: 10px;
-  animation: search-hit-flash 3s ease-out;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent);
+  animation: search-hit-flash var(--search-hit-duration) ease-out forwards;
 }
 
 @keyframes search-hit-flash {
