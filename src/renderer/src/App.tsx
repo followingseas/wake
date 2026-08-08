@@ -25,6 +25,7 @@ type UpdateBannerState =
 import { makeTranslate, resolveLanguage } from './i18n'
 import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
 import { buildGroups, SYNTHETIC_PREFIX } from './lib/groups'
+import { shortcut } from './lib/platform'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
 import { SearchPalette } from './components/SearchPalette'
@@ -53,6 +54,7 @@ export default function App(): ReactElement {
   const [searchFailed, setSearchFailed] = useState(false)
   const [highlightRef, setHighlightRef] = useState<string | null>(null)
   const searchRequestRef = useRef(0)
+  const selectRequestRef = useRef(0)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -158,11 +160,15 @@ export default function App(): ReactElement {
 
   // 인덱스가 갱신되면(revision) 같은 질의를 자동으로 다시 돌린다
   useEffect(() => {
+    // 질의가 비거나 팔레트를 닫아도 번호를 올린다 — 그래야 이미 떠난 요청의 응답이
+    // 뒤늦게 돌아와 상태를 덮어쓰지 않는다
+    const requestId = ++searchRequestRef.current
     if (!searchOpen) return undefined
     const trimmed = searchQuery.trim()
     if (!trimmed) return undefined
-    const requestId = ++searchRequestRef.current
     const timer = window.setTimeout(() => {
+      // 다시 시도하는 동안에는 이전 실패 표시를 걷는다
+      setSearchFailed(false)
       window.api
         .searchSessions(trimmed)
         .then((results) => {
@@ -244,19 +250,24 @@ export default function App(): ReactElement {
 
   const selectSession = useCallback(
     async (session: SessionMeta, highlight: string | null = null) => {
+      // 두 세션을 빠르게 연달아 고르면 로드가 역순으로 끝날 수 있다. 그때 늦게 온
+      // 대화가 헤더와 다른 세션의 본문을 그리지 않도록 마지막 선택만 반영한다
+      const requestId = ++selectRequestRef.current
       setSelected(session)
       setConversation(null)
       setHighlightRef(highlight)
       setLoadingConversation(true)
       try {
         const loaded = await window.api.loadConversation(session.filePath)
+        if (requestId !== selectRequestRef.current) return
         setConversation(loaded)
       } catch (error) {
+        if (requestId !== selectRequestRef.current) return
         // 실패하면 헤더만 남은 빈 패널이 되므로, 왜 비었는지는 알려줘야 한다
         console.error('[conversation] 로드 실패', error)
         showToast(t('toast.loadFailed'))
       } finally {
-        setLoadingConversation(false)
+        if (requestId === selectRequestRef.current) setLoadingConversation(false)
       }
     },
     [showToast, t]
@@ -419,7 +430,9 @@ export default function App(): ReactElement {
                 <WakeMark size={84} />
               </div>
               <p>{t('empty.title')}</p>
-              <p className="empty-state__hint">{t('empty.hint')}</p>
+              <p className="empty-state__hint">
+                {t('empty.hint', { find: shortcut('F'), search: shortcut('K') })}
+              </p>
             </div>
           </main>
         )}

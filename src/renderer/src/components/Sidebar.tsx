@@ -7,6 +7,7 @@ import {
 import type { ProjectInfo, SessionMeta } from '../../../shared/types'
 import { formatRelativeTime, shortenPath } from '../lib/format'
 import { buildGroups } from '../lib/groups'
+import { shortcut } from '../lib/platform'
 import { usePrefs } from '../prefs'
 
 interface Props {
@@ -117,7 +118,7 @@ export function Sidebar({
         <input
           ref={searchRef}
           type="search"
-          placeholder={t('sidebar.search')}
+          placeholder={t('sidebar.search', { find: shortcut('F') })}
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           spellCheck={false}

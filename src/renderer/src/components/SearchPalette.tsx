@@ -54,25 +54,37 @@ export function SearchPalette({
     listRef.current?.querySelector('.snippet.is-active')?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex])
 
+  // 닫을 때 팔레트를 연 컨트롤로 포커스를 돌려준다.
+  // 첫 렌더에서 잡아야 한다 — 이펙트 시점에는 입력창의 autoFocus가 이미 가져간 뒤다
+  const [opener] = useState(() => document.activeElement)
+  useEffect(
+    () => () => {
+      if (opener instanceof HTMLElement && opener.isConnected) opener.focus()
+    },
+    [opener]
+  )
+
   const trimmed = query.trim()
   // 응답도 진행률도 못 받았으면 인덱싱 중으로 본다 — 그 사이에 "결과 없음"을 보여주면 안 된다
   const indexing = results ? results.indexing : !progress?.ready
 
   let status: string
-  if (failed) {
-    status = t('search.failed')
-  } else if (indexing) {
+  if (indexing) {
     status =
       progress && progress.total > 0
         ? t('search.indexing', { done: progress.done, total: progress.total })
         : t('search.indexingPrep')
   } else if (!trimmed) {
+    // 질의를 지웠으면 직전 실패보다 안내가 먼저다
     status = t('search.hint')
+  } else if (failed) {
+    status = t('search.failed')
   } else if (!results) {
     // 디바운스·왕복 중이다. 아직 결과가 없다고 단정하지 않는다
     status = t('search.searching')
-  } else if (results.degraded && results.hits.length === 0) {
-    status = t('search.failed')
+  } else if (results.degraded) {
+    // 인덱스가 불완전하면 찾은 게 있어도 "이게 전부"라고 말하지 않는다
+    status = results.hits.length === 0 ? t('search.failed') : t('search.partial')
   } else if (results.hits.length === 0) {
     status = t('search.empty', { query: trimmed })
   } else {
@@ -100,8 +112,14 @@ export function SearchPalette({
       <div
         className="palette"
         role="dialog"
+        aria-modal="true"
         aria-label={t('search.open')}
         onMouseDown={(event) => event.stopPropagation()}
+        // Tab으로 뒤 화면의 컨트롤로 빠져나가면 ↑↓·↵가 더는 듣지 않는다.
+        // 팔레트는 입력창에서만 조작하므로 Tab 자체를 막아 포커스를 붙잡아 둔다
+        onKeyDown={(event) => {
+          if (event.key === 'Tab') event.preventDefault()
+        }}
       >
         <div className="palette__input-row">
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">

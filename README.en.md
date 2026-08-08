@@ -78,6 +78,8 @@ npm run build:linux   # Linux (AppImage, deb)
 
 ## Usage
 
+> `⌘` means `Ctrl` on Windows and Linux. The app shows whichever applies to your platform.
+
 | Action | How |
 |------|------|
 | Read a session | Expand a project in the sidebar → click a session |

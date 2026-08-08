@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import { shortcut } from '../lib/platform'
 import { usePrefs } from '../prefs'
 
 interface Props {
@@ -53,7 +54,7 @@ export function TopBar({ sidebarCollapsed, onToggleSidebar, onOpenSearch }: Prop
           />
         </svg>
         <span className="topbar__search-label">{t('search.open')}</span>
-        <kbd className="topbar__search-key">⌘K</kbd>
+        <kbd className="topbar__search-key">{shortcut('K')}</kbd>
       </button>
       <div className="topbar__side" />
     </header>

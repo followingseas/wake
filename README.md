@@ -77,6 +77,8 @@ npm run build:linux   # Linux (AppImage, deb)
 
 ## 사용법
 
+> 단축키의 `⌘` 는 Windows·Linux에서 `Ctrl` 입니다. 앱 화면에도 플랫폼에 맞는 표기가 나옵니다.
+
 | 동작 | 방법 |
 |------|------|
 | 세션 열람 | 사이드바에서 프로젝트 펼침 → 세션 클릭 |
