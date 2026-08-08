@@ -3,7 +3,7 @@ import type { AppSettings } from '../../shared/types'
 export type Lang = 'ko' | 'en'
 
 const ko = {
-  'sidebar.search': '세션·폴더 검색 (⌘F)',
+  'sidebar.search': '세션·폴더 검색 ({find})',
   'sidebar.loading': '불러오는 중…',
   'sidebar.empty': '~/.claude/projects 에서\n세션을 찾지 못했습니다.',
   'sidebar.collapse': '사이드바 접기',
@@ -11,6 +11,7 @@ const ko = {
   'search.open': '대화 내용 검색',
   'search.placeholder': '기억나는 단어로 대화 내용 검색',
   'search.hint': '모든 프로젝트의 대화 본문에서 찾습니다. ↑↓ 이동 · ↵ 열기',
+  'search.partial': '인덱싱에 실패해 결과가 불완전할 수 있습니다',
   'search.indexing': '인덱싱 중… {done}/{total}',
   'search.indexingPrep': '인덱싱 준비 중…',
   'search.searching': '검색 중…',
@@ -28,7 +29,7 @@ const ko = {
   'menu.delete': '삭제…',
   'session.messages': '메시지 {n}',
   'empty.title': '왼쪽에서 세션을 선택하세요',
-  'empty.hint': '⌘F 세션 목록 좁히기 · ⌘K 대화 내용 검색',
+  'empty.hint': '{find} 세션 목록 좁히기 · {search} 대화 내용 검색',
   'action.resume': '터미널에서 이어가기',
   'action.resume.hint': '터미널에서 이 세션을 이어서 연다',
   'action.fork': 'Fork로 열기',
@@ -106,7 +107,7 @@ const ko = {
 }
 
 const en: Record<MessageKey, string> = {
-  'sidebar.search': 'Filter sessions & folders (⌘F)',
+  'sidebar.search': 'Filter sessions & folders ({find})',
   'sidebar.loading': 'Loading…',
   'sidebar.empty': 'No sessions found in\n~/.claude/projects.',
   'sidebar.collapse': 'Collapse sidebar',
@@ -114,6 +115,7 @@ const en: Record<MessageKey, string> = {
   'search.open': 'Search conversations',
   'search.placeholder': 'Search across all conversations',
   'search.hint': 'Searches message contents across every project. ↑↓ to move · ↵ to open',
+  'search.partial': 'Indexing failed — these results may be incomplete',
   'search.indexing': 'Indexing… {done}/{total}',
   'search.indexingPrep': 'Preparing index…',
   'search.searching': 'Searching…',
@@ -131,7 +133,7 @@ const en: Record<MessageKey, string> = {
   'menu.delete': 'Delete…',
   'session.messages': '{n} messages',
   'empty.title': 'Select a session from the sidebar',
-  'empty.hint': '⌘F to filter sessions · ⌘K to search conversations',
+  'empty.hint': '{find} to filter sessions · {search} to search conversations',
   'action.resume': 'Resume in terminal',
   'action.resume.hint': 'Reopen this session in a terminal',
   'action.fork': 'Open as fork',
