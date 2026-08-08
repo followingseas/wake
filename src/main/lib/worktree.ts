@@ -6,8 +6,9 @@ import type { WorktreeInfo } from '../../shared/types'
 // 도구명을 하드코딩하지 않고 패턴으로 잡아 새 도구도 그대로 지원한다.
 const PATH_MARKER = /\/\.[^/]+\/worktrees\//
 // 프로젝트 디렉터리명은 경로의 '/'와 '.'을 '-'로 바꾼 것이라 '/.orca/worktrees/'가
-// '--orca-worktrees-'로 나타난다.
-const DIR_MARKER = /--[^-]+-worktrees-/
+// '--orca-worktrees-'로 나타난다. 도구명에도 하이픈이 들어갈 수 있어(.my-tool) 최소 매치로
+// 잡는다 — 구분자와 도구명 속 하이픈이 같은 문자라 경계를 길이로는 가를 수 없다.
+const DIR_MARKER = /--.+?-worktrees-/
 
 /**
  * 워크트리 세션인지 판별하고 부모 repo를 찾는다.
