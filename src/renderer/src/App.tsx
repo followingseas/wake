@@ -50,6 +50,7 @@ export default function App(): ReactElement {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null)
   const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null)
+  const [searchFailed, setSearchFailed] = useState(false)
   const [highlightRef, setHighlightRef] = useState<string | null>(null)
   const searchViewRef = useRef<HTMLInputElement>(null)
   const searchRequestRef = useRef(0)
@@ -156,17 +157,28 @@ export default function App(): ReactElement {
 
   useEffect(() => window.api.onSearchProgress(setSearchProgress), [])
 
-  // 내용 검색은 200ms 디바운스하고, 인덱스가 갱신되면 같은 질의를 자동으로 다시 돌린다
+  // 인덱스가 갱신되면(revision) 같은 질의를 자동으로 다시 돌린다
   useEffect(() => {
     if (!searchOpen) return undefined
     const trimmed = searchQuery.trim()
     if (!trimmed) return undefined
     const requestId = ++searchRequestRef.current
     const timer = window.setTimeout(() => {
-      window.api.searchSessions(trimmed).then((results) => {
-        // 늦게 도착한 이전 질의의 응답은 버린다
-        if (requestId === searchRequestRef.current) setSearchResults(results)
-      })
+      window.api
+        .searchSessions(trimmed)
+        .then((results) => {
+          // 늦게 도착한 이전 질의의 응답은 버린다
+          if (requestId !== searchRequestRef.current) return
+          setSearchFailed(false)
+          setSearchResults(results)
+        })
+        .catch((error) => {
+          if (requestId !== searchRequestRef.current) return
+          console.error('[search] 질의 실패', error)
+          // 이전 질의의 결과를 남겨두면 새 질의의 결과처럼 읽힌다
+          setSearchResults(null)
+          setSearchFailed(true)
+        })
     }, 200)
     return () => window.clearTimeout(timer)
   }, [searchOpen, searchQuery, searchProgress?.ready, searchProgress?.revision])
@@ -193,13 +205,13 @@ export default function App(): ReactElement {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      // Shift 조합을 먼저 걸러야 ⌘F 분기가 ⌘⇧F를 가로채지 않는다
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
         event.preventDefault()
         openContentSearch()
         return
       }
-      if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+      // CapsLock이 켜져 있으면 ⌘F도 key가 'F'로 오므로 양쪽 다 정규화해서 비교한다
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') {
         event.preventDefault()
         searchRef.current?.focus()
       }
@@ -241,11 +253,15 @@ export default function App(): ReactElement {
       try {
         const loaded = await window.api.loadConversation(session.filePath)
         setConversation(loaded)
+      } catch (error) {
+        // 실패하면 헤더만 남은 빈 패널이 되므로, 왜 비었는지는 알려줘야 한다
+        console.error('[conversation] 로드 실패', error)
+        showToast(t('toast.loadFailed'))
       } finally {
         setLoadingConversation(false)
       }
     },
-    []
+    [showToast, t]
   )
 
   const openSessionMenu = useCallback(
@@ -283,11 +299,18 @@ export default function App(): ReactElement {
 
   const openHit = useCallback(
     async (hit: SearchHit, ref: string) => {
-      // 사이드바 목록은 프로젝트당 한 번만 읽어 두므로, 그 뒤 생긴 세션은 검색에만 잡힌다.
-      // 캐시에서 못 찾으면 한 번 더 읽어 보고 그래도 없을 때만 없는 것으로 판단한다
+      // 사이드바 목록은 프로젝트당 한 번만 읽어 두므로, 그 뒤 생긴 세션은 검색에만 잡힌다
       let session = sessions[hit.projectId]?.find((meta) => meta.id === hit.sessionId)
       if (!session) {
-        const metas = await window.api.listSessions(hit.projectId)
+        let metas: SessionMeta[]
+        try {
+          metas = await window.api.listSessions(hit.projectId)
+        } catch (error) {
+          // 여기서 그냥 던지면 클릭이 아무 반응 없이 죽는다
+          console.error('[search] 세션 목록 조회 실패', error)
+          showToast(t('search.openFailed'))
+          return
+        }
         loadedProjects.current.add(hit.projectId)
         setSessions((previous) => ({ ...previous, [hit.projectId]: metas }))
         session = metas.find((meta) => meta.id === hit.sessionId)
@@ -379,8 +402,9 @@ export default function App(): ReactElement {
         {searchOpen ? (
           <SearchView
             query={searchQuery}
-            results={searchQuery.trim() ? searchResults : null}
+            results={searchResults?.query === searchQuery.trim() ? searchResults : null}
             progress={searchProgress}
+            failed={searchFailed}
             inputRef={searchViewRef}
             projectLabel={projectLabel}
             onQueryChange={setSearchQuery}

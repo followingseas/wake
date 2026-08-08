@@ -26,9 +26,12 @@ function registerIpcHandlers(): void {
   ipcMain.handle('projects:list', () => listProjects())
   ipcMain.handle('sessions:list', (_event, projectId: string) => listSessions(projectId))
   ipcMain.handle('conversation:load', (_event, filePath: string) => parseConversation(filePath))
-  ipcMain.handle('search:query', (_event, query: string) =>
-    searchSessions(typeof query === 'string' ? query : '')
-  )
+  ipcMain.handle('search:query', (_event, query: string) => {
+    // 프리로드가 문자열만 넘기므로 여기 오면 버그다. 빈 질의로 눌러 "결과 없음"으로
+    // 위장하지 않고 렌더러까지 실패를 올려보낸다
+    if (typeof query !== 'string') throw new TypeError('search:query expects a string')
+    return searchSessions(query)
+  })
   ipcMain.handle('session:resume', (_event, sessionId: string, cwd: string | null) =>
     resumeSession(sessionId, cwd)
   )

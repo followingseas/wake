@@ -6,8 +6,10 @@ import { SidebarExpand } from './SidebarExpand'
 
 interface Props {
   query: string
+  /** 지금 입력된 질의에 대한 결과만 넘어온다 — 낡은 결과는 null */
   results: SearchResults | null
   progress: SearchProgress | null
+  failed: boolean
   inputRef: RefObject<HTMLInputElement | null>
   /** projectId를 사이드바에 보이는 이름으로 옮긴다 */
   projectLabel: (projectId: string) => string
@@ -21,6 +23,7 @@ export function SearchView({
   query,
   results,
   progress,
+  failed,
   inputRef,
   projectLabel,
   onQueryChange,
@@ -30,21 +33,27 @@ export function SearchView({
 }: Props): ReactElement {
   const { t } = usePrefs()
   const trimmed = query.trim()
-  // 응답에 실려 온 상태가 가장 정확하다. 아직 응답도 진행률도 못 받았다면 인덱싱 중으로 본다
-  // (인덱싱은 창이 뜨고 잠시 뒤 시작하므로, 그 사이에 "결과 없음"을 보여주면 안 된다)
+  // 응답도 진행률도 못 받았으면 인덱싱 중으로 본다 — 그 사이에 "결과 없음"을 보여주면 안 된다
   const indexing = results ? results.indexing : !progress?.ready
 
-  let status = ''
-  if (indexing) {
+  let status: string
+  if (failed) {
+    status = t('search.failed')
+  } else if (indexing) {
     status =
       progress && progress.total > 0
         ? t('search.indexing', { done: progress.done, total: progress.total })
         : t('search.indexingPrep')
   } else if (!trimmed) {
     status = t('search.hint')
-  } else if (results && results.hits.length === 0) {
+  } else if (!results) {
+    // 디바운스·왕복 중이다. 아직 결과가 없다고 단정하지 않는다
+    status = t('search.searching')
+  } else if (results.degraded && results.hits.length === 0) {
+    status = t('search.failed')
+  } else if (results.hits.length === 0) {
     status = t('search.empty', { query: trimmed })
-  } else if (results) {
+  } else {
     const matches = results.hits.reduce((sum, hit) => sum + hit.matchCount, 0)
     status = t('search.summary', { sessions: results.hits.length, matches })
   }
