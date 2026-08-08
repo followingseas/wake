@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   fontScale: 'normal',
   expandThinking: false,
   showMeta: true,
+  showAgentSessions: false,
   checkUpdatesOnLaunch: true
 }
 

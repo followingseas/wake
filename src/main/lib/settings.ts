@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   fontScale: 'normal',
   expandThinking: false,
   showMeta: true,
+  showAgentSessions: false,
   checkUpdatesOnLaunch: true
 }
 
@@ -36,6 +37,10 @@ export function loadSettings(): AppSettings {
           ? raw.expandThinking
           : DEFAULT_SETTINGS.expandThinking,
       showMeta: typeof raw.showMeta === 'boolean' ? raw.showMeta : DEFAULT_SETTINGS.showMeta,
+      showAgentSessions:
+        typeof raw.showAgentSessions === 'boolean'
+          ? raw.showAgentSessions
+          : DEFAULT_SETTINGS.showAgentSessions,
       checkUpdatesOnLaunch:
         typeof raw.checkUpdatesOnLaunch === 'boolean'
           ? raw.checkUpdatesOnLaunch

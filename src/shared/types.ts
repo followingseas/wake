@@ -117,6 +117,8 @@ export interface AppSettings {
   fontScale: 'small' | 'normal' | 'large'
   expandThinking: boolean
   showMeta: boolean
+  /** 도구가 SDK로 띄운 자동 세션을 목록에 표시할지. 기본은 숨김 */
+  showAgentSessions: boolean
   checkUpdatesOnLaunch: boolean
 }
 
