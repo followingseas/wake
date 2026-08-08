@@ -163,6 +163,8 @@ export interface SearchResults {
   truncated: boolean
   /** 최초 인덱스 구축 중이라 부분 결과면 true */
   indexing: boolean
+  /** 인덱싱이 실패해 인덱스가 불완전하다 — hits가 비어도 "그런 대화 없음"으로 읽으면 안 된다 */
+  degraded: boolean
 }
 
 export interface SearchProgress {
@@ -172,8 +174,14 @@ export interface SearchProgress {
   total: number
   /** 최초 인덱스 구축이 끝났으면 true */
   ready: boolean
-  /** 인덱스 내용이 바뀔 때마다 증가한다 — 렌더러가 질의를 다시 던질 시점을 안다 */
+  /**
+   * 인덱스 내용이 바뀔 때마다 증가한다. 검색은 정합을 기다리지 않고 낡았을 수 있는
+   * 인덱스로 즉시 답하므로, 렌더러는 이 값이 올랐을 때만 자기 결과가 낡았음을 안다.
+   * ready는 최초 1회만 뒤집혀 이 역할을 못 한다.
+   */
   revision: number
+  /** 인덱싱이 실패했으면 true */
+  failed: boolean
 }
 
 export interface ClaudeHistoryApi {
