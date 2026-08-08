@@ -115,7 +115,7 @@ export function UserMessage({
     return <MetaLine item={item} />
   }
   const clock = formatClock(item.timestamp)
-  // data-uuid는 검색 결과에서 이 메시지로 스크롤할 때 쓴다 (메타 분기는 검색 대상이 아니라 붙이지 않는다)
+  // 위쪽 메타 분기에는 data-uuid를 붙이지 않는다 — 검색이 인덱싱하지 않아 이동 대상이 아니다
   return (
     <article className={`user-message${highlighted ? ' is-search-hit' : ''}`} data-uuid={item.uuid}>
       {clock && <time className="item-clock">{clock}</time>}
