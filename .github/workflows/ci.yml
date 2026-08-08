@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # 타입·린트·테스트에는 electron 바이너리도 husky 훅도 필요 없다.
+      # 타입 선언은 electron 패키지에 들어 있어 postinstall 없이도 받는다
+      - name: 의존성 설치
+        run: npm ci --ignore-scripts
+
+      - name: 타입 검사
+        run: npm run typecheck
+
+      - name: 린트
+        run: npm run lint
+
+      - name: 테스트
+        run: npm test
