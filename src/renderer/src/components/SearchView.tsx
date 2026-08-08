@@ -30,7 +30,9 @@ export function SearchView({
 }: Props): ReactElement {
   const { t } = usePrefs()
   const trimmed = query.trim()
-  const indexing = progress ? !progress.ready : false
+  // 응답에 실려 온 상태가 가장 정확하다. 아직 응답도 진행률도 못 받았다면 인덱싱 중으로 본다
+  // (인덱싱은 창이 뜨고 잠시 뒤 시작하므로, 그 사이에 "결과 없음"을 보여주면 안 된다)
+  const indexing = results ? results.indexing : !progress?.ready
 
   let status = ''
   if (indexing) {

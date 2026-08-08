@@ -21,6 +21,7 @@ interface Props {
   onSelectSession: (session: SessionMeta) => void
   onSessionMenu: (session: SessionMeta) => void
   onCollapseSidebar: () => void
+  onOpenContentSearch: () => void
   onResizeStart: (event: ReactMouseEvent) => void
 }
 
@@ -98,6 +99,7 @@ export function Sidebar({
   onSelectSession,
   onSessionMenu,
   onCollapseSidebar,
+  onOpenContentSearch,
   onResizeStart
 }: Props): ReactElement {
   const { t } = usePrefs()
@@ -130,14 +132,35 @@ export function Sidebar({
         </button>
       </div>
       <div className="sidebar__search">
-        <input
-          ref={searchRef}
-          type="search"
-          placeholder={t('sidebar.search')}
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          spellCheck={false}
-        />
+        <div className="sidebar__search-row">
+          <input
+            ref={searchRef}
+            type="search"
+            placeholder={t('sidebar.search')}
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            spellCheck={false}
+          />
+          <button
+            className="sidebar__content-search"
+            onClick={onOpenContentSearch}
+            title={t('sidebar.contentSearch')}
+            aria-label={t('sidebar.contentSearch')}
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <line
+                x1="10.4"
+                y1="10.4"
+                x2="14"
+                y2="14"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
       <nav className="sidebar__list">
         {groups.map((group) => {

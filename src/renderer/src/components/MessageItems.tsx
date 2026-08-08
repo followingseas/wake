@@ -100,7 +100,13 @@ function CompactDivider({ item }: { item: UserItem }): ReactElement {
   )
 }
 
-export function UserMessage({ item }: { item: UserItem }): ReactElement {
+export function UserMessage({
+  item,
+  highlighted = false
+}: {
+  item: UserItem
+  highlighted?: boolean
+}): ReactElement {
   const { t } = usePrefs()
   if (item.meta) {
     if (item.meta.kind === 'bashRun') return <BashRun item={item} />
@@ -109,8 +115,9 @@ export function UserMessage({ item }: { item: UserItem }): ReactElement {
     return <MetaLine item={item} />
   }
   const clock = formatClock(item.timestamp)
+  // data-uuid는 검색 결과에서 이 메시지로 스크롤할 때 쓴다 (메타 분기는 검색 대상이 아니라 붙이지 않는다)
   return (
-    <article className="user-message">
+    <article className={`user-message${highlighted ? ' is-search-hit' : ''}`} data-uuid={item.uuid}>
       {clock && <time className="item-clock">{clock}</time>}
       <div className="user-message__bubble">
         <pre className="user-message__text">{item.text}</pre>
@@ -146,10 +153,19 @@ function ThinkingBlock({ text }: { text: string }): ReactElement {
   )
 }
 
-export function AssistantTurn({ item }: { item: AssistantItem }): ReactElement {
+export function AssistantTurn({
+  item,
+  highlighted = false
+}: {
+  item: AssistantItem
+  highlighted?: boolean
+}): ReactElement {
   const clock = formatClock(item.timestamp)
   return (
-    <article className="assistant-turn">
+    <article
+      className={`assistant-turn${highlighted ? ' is-search-hit' : ''}`}
+      data-uuid={item.uuid}
+    >
       {clock && <time className="item-clock">{clock}</time>}
       {item.blocks.map((block, index) => {
         if (block.type === 'text') return <Markdown key={index} text={block.text} />

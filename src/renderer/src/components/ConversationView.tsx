@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react'
+import { useEffect, useRef, type ReactElement } from 'react'
 import type { Conversation, ProjectInfo, SessionMeta, UserMetaInfo } from '../../../shared/types'
 import { formatBytes, formatFullDate, shortenPath } from '../lib/format'
 import { usePrefs } from '../prefs'
@@ -13,6 +13,8 @@ interface Props {
   project: ProjectInfo | null
   conversation: Conversation | null
   loading: boolean
+  /** 검색 결과에서 열었을 때 이동·강조할 아이템 uuid */
+  highlightRef: string | null
   onResume: () => void
   onFork: () => void
   onDelete: () => void
@@ -25,6 +27,7 @@ export function ConversationView({
   project,
   conversation,
   loading,
+  highlightRef,
   onResume,
   onFork,
   onDelete,
@@ -32,6 +35,7 @@ export function ConversationView({
   onExpandSidebar
 }: Props): ReactElement {
   const { t, settings } = usePrefs()
+  const scrollRef = useRef<HTMLDivElement>(null)
   const cwd = session.cwd ?? project?.realPath ?? null
   const items = conversation
     ? conversation.items.filter(
@@ -42,6 +46,16 @@ export function ConversationView({
           ALWAYS_VISIBLE_META.has(item.meta.kind)
       )
     : []
+
+  // 검색 결과에서 넘어온 아이템으로 스크롤한다 (강조 해제 시점은 App이 관리한다)
+  useEffect(() => {
+    if (!highlightRef || !conversation) return
+    // start 정렬 — 어시스턴트 턴은 화면보다 길 수 있어 center로 맞추면 강조 테두리가 화면 밖으로 나간다
+    scrollRef.current
+      ?.querySelector(`[data-uuid="${CSS.escape(highlightRef)}"]`)
+      ?.scrollIntoView({ block: 'start' })
+  }, [highlightRef, conversation])
+
   return (
     <main className="conversation">
       <header className="conversation__header">
@@ -74,7 +88,7 @@ export function ConversationView({
           </button>
         </div>
       </header>
-      <div className="conversation__scroll">
+      <div className="conversation__scroll" ref={scrollRef}>
         {loading && <p className="conversation__status">{t('conversation.loading')}</p>}
         {!loading && conversation && items.length === 0 && (
           <p className="conversation__status">{t('conversation.empty')}</p>
@@ -83,9 +97,13 @@ export function ConversationView({
           <div className="timeline">
             {items.map((item) =>
               item.kind === 'user' ? (
-                <UserMessage key={item.uuid} item={item} />
+                <UserMessage key={item.uuid} item={item} highlighted={item.uuid === highlightRef} />
               ) : (
-                <AssistantTurn key={item.uuid} item={item} />
+                <AssistantTurn
+                  key={item.uuid}
+                  item={item}
+                  highlighted={item.uuid === highlightRef}
+                />
               )
             )}
           </div>
