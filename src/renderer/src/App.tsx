@@ -111,11 +111,19 @@ export default function App(): ReactElement {
     loadedProjects.current.add(projectId)
     const metas = await window.api.listSessions(projectId)
     setSessions((prev) => ({ ...prev, [projectId]: metas }))
-    // 시작 시 sessionCount는 파일 수 휴리스틱이라, 실제 목록이 비면 프로젝트를 숨긴다 (삭제 경로와 동일 규칙)
+    // 시작 시 카운트는 파일 수 휴리스틱이라 실제 목록으로 보정한다.
+    // 상태에서 지우지는 않는다 — 빈 그룹을 숨기는 일은 buildGroups가 맡고,
+    // 그래야 표시 토글을 되돌렸을 때 프로젝트가 다시 나타난다.
     setProjects((prev) =>
-      prev
-        .map((p) => (p.id === projectId ? { ...p, sessionCount: metas.length } : p))
-        .filter((p) => p.sessionCount > 0)
+      prev.map((p) =>
+        p.id === projectId
+          ? {
+              ...p,
+              sessionCount: metas.length,
+              userSessionCount: metas.filter((m) => m.origin === 'user').length
+            }
+          : p
+      )
     )
   }, [])
 
@@ -130,6 +138,7 @@ export default function App(): ReactElement {
         setUpdate((prev) => (prev?.mode === 'ready' ? prev : null))
       }
     })
+    // 첫 그룹 자동 펼침이 설정에 좌우되므로 설정을 먼저 받고 프로젝트를 읽는다
     window.api.getSettings().then((info) => {
       setSettings(info.settings)
       if (info.settings.checkUpdatesOnLaunch) {
@@ -140,15 +149,15 @@ export default function App(): ReactElement {
           }
         })
       }
-    })
-    window.api.listProjects().then((list) => {
-      setProjects(list)
-      // 최상위는 그룹 단위이므로 첫 그룹의 루트를 펼친다
-      const first = buildGroups(list)[0]
-      if (first) {
-        setExpanded(new Set([first.root.id]))
-        loadSessions(first.root.id)
-      }
+      window.api.listProjects().then((list) => {
+        setProjects(list)
+        // 최상위는 그룹 단위이므로 첫 그룹의 루트를 펼친다
+        const first = buildGroups(list, info.settings.showAgentSessions)[0]
+        if (first) {
+          setExpanded(new Set([first.root.id]))
+          loadSessions(first.root.id)
+        }
+      })
     })
     return unsubscribe
   }, [loadSessions])
@@ -290,7 +299,10 @@ export default function App(): ReactElement {
     [projects, selected]
   )
 
-  const groups = useMemo(() => buildGroups(projects), [projects])
+  const groups = useMemo(
+    () => buildGroups(projects, settings.showAgentSessions),
+    [projects, settings.showAgentSessions]
+  )
 
   const projectLabel = useCallback(
     (projectId: string) => {
@@ -375,9 +387,15 @@ export default function App(): ReactElement {
     loadedProjects.current.add(target.projectId)
     setSessions((prev) => ({ ...prev, [target.projectId]: metas }))
     setProjects((prev) =>
-      prev
-        .map((p) => (p.id === target.projectId ? { ...p, sessionCount: metas.length } : p))
-        .filter((p) => p.sessionCount > 0)
+      prev.map((p) =>
+        p.id === target.projectId
+          ? {
+              ...p,
+              sessionCount: metas.length,
+              userSessionCount: metas.filter((m) => m.origin === 'user').length
+            }
+          : p
+      )
     )
     if (selected?.id === target.id) {
       setSelected(null)
