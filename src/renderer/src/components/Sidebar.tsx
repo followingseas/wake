@@ -99,6 +99,9 @@ function SessionList({
           >
             <span className="session__title">{session.title}</span>
             <span className="session__meta">
+              {session.origin === 'agent' && (
+                <span className="session__badge">{t('session.autoBadge')}</span>
+              )}
               {formatRelativeTime(session.updatedAt, t)} ·{' '}
               {t('session.messages', { n: session.messageCount })}
             </span>

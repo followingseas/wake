@@ -183,6 +183,12 @@ export function SettingsDialog({ onClose }: Props): ReactElement {
             label={t('settings.showMeta')}
             hint={t('settings.showMeta.hint')}
           />
+          <Toggle
+            checked={settings.showAgentSessions}
+            onChange={(showAgentSessions) => set({ showAgentSessions })}
+            label={t('settings.showAgentSessions')}
+            hint={t('settings.showAgentSessions.hint')}
+          />
         </Section>
 
         <Section title={t('settings.updates')}>

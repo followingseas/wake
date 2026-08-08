@@ -366,6 +366,21 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* 자동 생성 세션 표시가 켜졌을 때만 나타난다. 제목은 line-clamp 대상이라 메타 줄에 둔다 */
+.session__badge {
+  display: inline-block;
+  margin-right: 5px;
+  padding: 0 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 9.5px;
+  line-height: 14px;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+
 /* ── 대화 영역 ───────────────────────────────────────────────── */
 .conversation {
   display: flex;
