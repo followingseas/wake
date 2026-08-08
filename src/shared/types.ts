@@ -133,6 +133,29 @@ export type UpdateEvent =
   | { type: 'ready'; version: string }
   | { type: 'error'; message: string }
 
+export interface SearchSnippet {
+  /** 매칭된 ConversationItem의 uuid */
+  ref: string
+  role: 'user' | 'assistant'
+  /** 매칭 앞 문맥 — 잘렸으면 앞에 말줄임표가 붙는다 */
+  before: string
+  /** 원문 대소문자를 보존한 매칭 부분 */
+  match: string
+  /** 매칭 뒤 문맥 — 잘렸으면 뒤에 말줄임표가 붙는다 */
+  after: string
+}
+
+export interface SearchHit {
+  sessionId: string
+  projectId: string
+  filePath: string
+  title: string
+  updatedAt: number
+  /** 세션 전체 매칭 수 — snippets 길이보다 클 수 있다 */
+  matchCount: number
+  snippets: SearchSnippet[]
+}
+
 export interface ClaudeHistoryApi {
   listProjects: () => Promise<ProjectInfo[]>
   listSessions: (projectId: string) => Promise<SessionMeta[]>
