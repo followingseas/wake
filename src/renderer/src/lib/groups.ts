@@ -51,6 +51,7 @@ export function buildGroups(projects: ProjectInfo[]): ProjectGroup[] {
             realPath: wt.rootPath,
             name,
             sessionCount: 0,
+            userSessionCount: 0,
             lastActiveAt: 0,
             worktree: null
           },

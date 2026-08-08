@@ -14,6 +14,8 @@ export interface ProjectInfo {
   realPath: string | null
   name: string
   sessionCount: number
+  /** 자동 생성(agent) 세션을 뺀 개수. 목록 필터가 꺼져 있을 때 배지에 쓴다 */
+  userSessionCount: number
   lastActiveAt: number
   worktree: WorktreeInfo | null
 }
@@ -30,6 +32,7 @@ export interface SessionMeta {
   gitBranch: string | null
   cwd: string | null
   fileSize: number
+  origin: SessionOrigin
 }
 
 export type AssistantBlock =
