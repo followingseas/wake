@@ -178,6 +178,7 @@ export interface ClaudeHistoryApi {
   listProjects: () => Promise<ProjectInfo[]>
   listSessions: (projectId: string) => Promise<SessionMeta[]>
   loadConversation: (filePath: string) => Promise<Conversation>
+  searchSessions: (query: string) => Promise<SearchResults>
   resumeSession: (sessionId: string, cwd: string | null) => Promise<ActionResult>
   forkSession: (sessionId: string, cwd: string | null) => Promise<ActionResult>
   deleteSession: (filePath: string) => Promise<ActionResult>
@@ -188,6 +189,7 @@ export interface ClaudeHistoryApi {
   checkForUpdate: (force?: boolean) => Promise<UpdateInfo>
   onUpdateEvent: (callback: (event: UpdateEvent) => void) => () => void
   onOpenSettings: (callback: () => void) => () => void
+  onSearchProgress: (callback: (progress: SearchProgress) => void) => () => void
   showSessionMenu: (labels: {
     reveal: string
     delete: string

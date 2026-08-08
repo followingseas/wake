@@ -1,10 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ClaudeHistoryApi, UpdateEvent } from '../shared/types'
+import type { ClaudeHistoryApi, SearchProgress, UpdateEvent } from '../shared/types'
 
 const api: ClaudeHistoryApi = {
   listProjects: () => ipcRenderer.invoke('projects:list'),
   listSessions: (projectId) => ipcRenderer.invoke('sessions:list', projectId),
   loadConversation: (filePath) => ipcRenderer.invoke('conversation:load', filePath),
+  searchSessions: (query) => ipcRenderer.invoke('search:query', query),
   resumeSession: (sessionId, cwd) => ipcRenderer.invoke('session:resume', sessionId, cwd),
   forkSession: (sessionId, cwd) => ipcRenderer.invoke('session:fork', sessionId, cwd),
   deleteSession: (filePath) => ipcRenderer.invoke('session:delete', filePath),
@@ -23,6 +24,12 @@ const api: ClaudeHistoryApi = {
     const listener = (): void => callback()
     ipcRenderer.on('menu:open-settings', listener)
     return () => ipcRenderer.removeListener('menu:open-settings', listener)
+  },
+  onSearchProgress: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: SearchProgress): void =>
+      callback(payload)
+    ipcRenderer.on('search:progress', listener)
+    return () => ipcRenderer.removeListener('search:progress', listener)
   },
   showSessionMenu: (labels) => ipcRenderer.invoke('session:menu', labels),
   installUpdate: () => ipcRenderer.invoke('update:install')
