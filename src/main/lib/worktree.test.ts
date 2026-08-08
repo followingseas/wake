@@ -54,6 +54,15 @@ describe('detectWorktree', () => {
     expect(found?.rootPath).toBe('/Users/me/Dev/wake')
   })
 
+  it('도구명에 하이픈이 있어도 폴백에서 감지한다', () => {
+    // 구분자와 도구명 속 하이픈이 같은 문자라, 마커를 최소 매치로 잡아야 경계가 맞는다
+    expect(detectWorktree('-Users-me-Dev-wake--my-tool-worktrees-branch-a', null)).toEqual({
+      rootPath: null,
+      rootDirName: '-Users-me-Dev-wake',
+      name: 'branch-a'
+    })
+  })
+
   it('realPath 가 없으면 디렉터리명으로 폴백한다', () => {
     expect(detectWorktree('-Users-me-Dev-wake--claude-worktrees-mossy-flask', null)).toEqual({
       rootPath: null,
