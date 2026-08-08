@@ -1,10 +1,11 @@
 import { readdir, stat } from 'fs/promises'
 import { homedir } from 'os'
 import { basename, join } from 'path'
-import type { ProjectInfo, SessionMeta, SessionOrigin, WorktreeInfo } from '../../shared/types'
+import type { ProjectInfo, SessionMeta, SessionOrigin } from '../../shared/types'
 import { forEachJsonlLine, readHead } from './jsonl'
 import { getMessage, isRealUserPrompt, summarize } from './entries'
 import { originFromEntrypoint } from './sessionOrigin'
+import { detectWorktree } from './worktree'
 
 export function projectsRoot(): string {
   // CHV_DATA_DIR: 개발·데모용 데이터 디렉토리 오버라이드
@@ -57,27 +58,6 @@ async function scanSessionHead(filePath: string): Promise<SessionHead> {
     return undefined
   })
   return { hasRealMessage: found, origin: originFromEntrypoint(entrypoint) }
-}
-
-// Claude Code 워크트리(.claude/worktrees/<name>) 세션인지 판별한다.
-// realPath가 우선이고, cwd 기록이 없는 세션은 디렉토리명 패턴으로 폴백한다.
-function detectWorktree(dirName: string, realPath: string | null): WorktreeInfo | null {
-  const dirMarker = '--claude-worktrees-'
-  const pathMarker = '/.claude/worktrees/'
-  let rootPath: string | null = null
-  let name: string | null = null
-  if (realPath) {
-    const idx = realPath.indexOf(pathMarker)
-    if (idx !== -1) {
-      rootPath = realPath.slice(0, idx)
-      name = realPath.slice(idx + pathMarker.length).split('/')[0] || null
-    }
-  }
-  const dirIdx = dirName.indexOf(dirMarker)
-  const rootDirName = dirIdx !== -1 ? dirName.slice(0, dirIdx) : ''
-  if (name === null && dirIdx !== -1) name = dirName.slice(dirIdx + dirMarker.length) || null
-  if (name === null) return null
-  return { rootPath, rootDirName, name }
 }
 
 export async function listProjects(): Promise<ProjectInfo[]> {
