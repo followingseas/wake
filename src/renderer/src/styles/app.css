@@ -1508,6 +1508,11 @@ body.is-resizing {
   align-items: center;
 }
 
+.sidebar__search-row input {
+  flex: 1;
+  min-width: 0;
+}
+
 .sidebar__content-search {
   flex: none;
   display: flex;
@@ -1585,6 +1590,8 @@ body.is-resizing {
 }
 
 .search-hit {
+  /* 스크롤 컨테이너가 곧 flex 컨테이너라, 축소를 막지 않으면 카드가 납작하게 눌린다 */
+  flex: none;
   border: 1px solid var(--border-soft);
   border-radius: 10px;
   background: var(--bg-raised);
@@ -1670,15 +1677,19 @@ body.is-resizing {
 }
 
 /* 검색 결과에서 이동해 온 메시지를 잠깐 강조한다 */
+.timeline [data-uuid] {
+  scroll-margin-top: 20px;
+}
+
 .is-search-hit {
   border-radius: 10px;
-  animation: search-hit-flash 2.4s ease-out;
+  animation: search-hit-flash 3s ease-out;
 }
 
 @keyframes search-hit-flash {
   0%,
-  55% {
-    box-shadow: 0 0 0 3px var(--accent-soft);
+  60% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent);
   }
   100% {
     box-shadow: 0 0 0 3px transparent;

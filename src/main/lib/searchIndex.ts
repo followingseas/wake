@@ -29,7 +29,8 @@ interface StoredDocument {
 
 const documents = new Map<string, SearchDocument>()
 let ready = false
-let progress: SearchProgress = { done: 0, total: 0, ready: false }
+let revision = 0
+let progress: SearchProgress = { done: 0, total: 0, ready: false, revision: 0 }
 let running: Promise<void> | null = null
 let lastReconcileAt = 0
 let progressWindow: BrowserWindow | null = null
@@ -38,7 +39,8 @@ function indexPath(): string {
   return join(app.getPath('userData'), 'search-index.jsonl')
 }
 
-function emitProgress(): void {
+function emitProgress(done: number, total: number): void {
+  progress = { done, total, ready, revision }
   if (progressWindow && !progressWindow.isDestroyed()) {
     progressWindow.webContents.send('search:progress', progress)
   }
@@ -129,11 +131,11 @@ async function buildDocument(meta: SessionMeta): Promise<SearchDocument | null> 
 
 async function reconcile(): Promise<void> {
   const projectIds = await listProjectIds()
-  progress = { done: 0, total: projectIds.length, ready }
-  emitProgress()
+  emitProgress(0, projectIds.length)
 
   const seen = new Set<string>()
   let changed = false
+  let done = 0
 
   for (const projectId of projectIds) {
     const metas = await listSessions(projectId).catch(() => [] as SessionMeta[])
@@ -153,8 +155,8 @@ async function reconcile(): Promise<void> {
       else documents.delete(meta.filePath)
       changed = true
     }
-    progress = { done: progress.done + 1, total: projectIds.length, ready }
-    emitProgress()
+    done += 1
+    emitProgress(done, projectIds.length)
     // 인덱싱이 렌더러의 IPC를 굶기지 않도록 프로젝트 사이에서 이벤트 루프를 넘긴다
     await new Promise((resolve) => setImmediate(resolve))
   }
@@ -167,8 +169,8 @@ async function reconcile(): Promise<void> {
 
   ready = true
   lastReconcileAt = Date.now()
-  progress = { ...progress, ready: true }
-  emitProgress()
+  if (changed) revision += 1
+  emitProgress(done, projectIds.length)
   if (changed) {
     await persist().catch((error) => console.error('[search] 인덱스 저장 실패', error))
   }
@@ -186,8 +188,7 @@ function ensureIndex(): Promise<void> {
         console.error('[search] 인덱싱 실패', error)
         ready = true
         lastReconcileAt = Date.now()
-        progress = { ...progress, ready: true }
-        emitProgress()
+        emitProgress(progress.done, progress.total)
       }
     })().finally(() => {
       running = null
@@ -205,11 +206,10 @@ export async function searchSessions(query: string): Promise<SearchResults> {
   const trimmed = query.trim()
   if (!trimmed) return { query: trimmed, hits: [], truncated: false, indexing: !ready }
 
-  if (!ready) {
-    // 구축 중이면 기다리지 않고 지금까지 만들어진 만큼으로 답한다
+  // 정합을 기다리지 않는다 — 지금 인덱스로 즉시 답하고, 갱신되면 revision이 올라
+  // 렌더러가 같은 질의를 다시 던진다. 검색이 디스크 스캔에 묶이면 안 된다
+  if (!ready || Date.now() - lastReconcileAt > RECONCILE_INTERVAL_MS) {
     void ensureIndex()
-  } else if (Date.now() - lastReconcileAt > RECONCILE_INTERVAL_MS) {
-    await ensureIndex()
   }
 
   const lowered = trimmed.toLowerCase()

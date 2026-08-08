@@ -172,6 +172,8 @@ export interface SearchProgress {
   total: number
   /** 최초 인덱스 구축이 끝났으면 true */
   ready: boolean
+  /** 인덱스 내용이 바뀔 때마다 증가한다 — 렌더러가 질의를 다시 던질 시점을 안다 */
+  revision: number
 }
 
 export interface ClaudeHistoryApi {

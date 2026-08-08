@@ -11,6 +11,9 @@ import type {
   AppSettings,
   Conversation,
   ProjectInfo,
+  SearchHit,
+  SearchProgress,
+  SearchResults,
   SessionMeta,
   UpdateInfo
 } from '../../shared/types'
@@ -24,6 +27,7 @@ import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
 import { buildGroups, SYNTHETIC_PREFIX } from './lib/groups'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
+import { SearchView } from './components/SearchView'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { SettingsDialog } from './components/SettingsDialog'
 import { SidebarExpand } from './components/SidebarExpand'
@@ -42,6 +46,13 @@ export default function App(): ReactElement {
   const [showSettings, setShowSettings] = useState(false)
   const [update, setUpdate] = useState<UpdateBannerState | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null)
+  const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null)
+  const [highlightRef, setHighlightRef] = useState<string | null>(null)
+  const searchViewRef = useRef<HTMLInputElement>(null)
+  const searchRequestRef = useRef(0)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
@@ -143,14 +154,51 @@ export default function App(): ReactElement {
   // 애플리케이션 메뉴(wake > 설정…)에서 설정 열기
   useEffect(() => window.api.onOpenSettings(() => setShowSettings(true)), [])
 
+  useEffect(() => window.api.onSearchProgress(setSearchProgress), [])
+
+  // 내용 검색은 200ms 디바운스하고, 인덱스가 갱신되면 같은 질의를 자동으로 다시 돌린다
+  useEffect(() => {
+    if (!searchOpen) return undefined
+    const trimmed = searchQuery.trim()
+    if (!trimmed) return undefined
+    const requestId = ++searchRequestRef.current
+    const timer = window.setTimeout(() => {
+      window.api.searchSessions(trimmed).then((results) => {
+        // 늦게 도착한 이전 질의의 응답은 버린다
+        if (requestId === searchRequestRef.current) setSearchResults(results)
+      })
+    }, 200)
+    return () => window.clearTimeout(timer)
+  }, [searchOpen, searchQuery, searchProgress?.ready, searchProgress?.revision])
+
+  // 강조는 대화가 실제로 그려진 뒤부터 재는데, 로딩이 길어도 표시를 놓치지 않기 위해서다
+  useEffect(() => {
+    if (!highlightRef || !conversation) return undefined
+    const timer = window.setTimeout(() => setHighlightRef(null), 3000)
+    return () => window.clearTimeout(timer)
+  }, [highlightRef, conversation])
+
   // 검색 시 아직 안 읽은 프로젝트의 세션 메타를 모두 로드한다
   useEffect(() => {
     if (!query.trim()) return
     for (const project of projects) loadSessions(project.id)
   }, [query, projects, loadSessions])
 
+  const openContentSearch = useCallback(() => {
+    setSearchOpen(true)
+    // 사이드바에 입력해 둔 질의가 있으면 그대로 이어받는다
+    setSearchQuery((previous) => previous || query)
+    window.setTimeout(() => searchViewRef.current?.select(), 0)
+  }, [query])
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      // Shift 조합을 먼저 걸러야 ⌘F 분기가 ⌘⇧F를 가로채지 않는다
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault()
+        openContentSearch()
+        return
+      }
       if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
         event.preventDefault()
         searchRef.current?.focus()
@@ -162,11 +210,12 @@ export default function App(): ReactElement {
       if (event.key === 'Escape') {
         setShowSettings(false)
         setDeleteTarget(null)
+        setSearchOpen(false)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [openContentSearch])
 
   const toggleProject = useCallback(
     (projectId: string) => {
@@ -183,17 +232,21 @@ export default function App(): ReactElement {
     [loadSessions]
   )
 
-  const selectSession = useCallback(async (session: SessionMeta) => {
-    setSelected(session)
-    setConversation(null)
-    setLoadingConversation(true)
-    try {
-      const loaded = await window.api.loadConversation(session.filePath)
-      setConversation(loaded)
-    } finally {
-      setLoadingConversation(false)
-    }
-  }, [])
+  const selectSession = useCallback(
+    async (session: SessionMeta, highlight: string | null = null) => {
+      setSelected(session)
+      setConversation(null)
+      setHighlightRef(highlight)
+      setLoadingConversation(true)
+      try {
+        const loaded = await window.api.loadConversation(session.filePath)
+        setConversation(loaded)
+      } finally {
+        setLoadingConversation(false)
+      }
+    },
+    []
+  )
 
   const openSessionMenu = useCallback(
     async (session: SessionMeta) => {
@@ -210,6 +263,55 @@ export default function App(): ReactElement {
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === selected?.projectId) ?? null,
     [projects, selected]
+  )
+
+  const groups = useMemo(() => buildGroups(projects), [projects])
+
+  const projectLabel = useCallback(
+    (projectId: string) => {
+      const project = projects.find((candidate) => candidate.id === projectId)
+      if (!project) return projectId
+      const group = groups.find((candidate) =>
+        candidate.worktrees.some((worktree) => worktree.id === projectId)
+      )
+      // 워크트리 세션은 어느 저장소의 어느 워크트리인지 같이 보여야 구분이 된다
+      if (group) return `${group.root.name} ⎇ ${project.worktree?.name ?? project.name}`
+      return project.name
+    },
+    [groups, projects]
+  )
+
+  const openHit = useCallback(
+    async (hit: SearchHit, ref: string) => {
+      // 사이드바 목록은 프로젝트당 한 번만 읽어 두므로, 그 뒤 생긴 세션은 검색에만 잡힌다.
+      // 캐시에서 못 찾으면 한 번 더 읽어 보고 그래도 없을 때만 없는 것으로 판단한다
+      let session = sessions[hit.projectId]?.find((meta) => meta.id === hit.sessionId)
+      if (!session) {
+        const metas = await window.api.listSessions(hit.projectId)
+        loadedProjects.current.add(hit.projectId)
+        setSessions((previous) => ({ ...previous, [hit.projectId]: metas }))
+        session = metas.find((meta) => meta.id === hit.sessionId)
+      }
+      if (!session) {
+        showToast(t('search.missing'))
+        return
+      }
+      // 워크트리 세션은 그룹 루트까지 펼쳐야 사이드바에서 선택 상태가 보인다
+      const group = groups.find(
+        (candidate) =>
+          candidate.root.id === hit.projectId ||
+          candidate.worktrees.some((worktree) => worktree.id === hit.projectId)
+      )
+      setExpanded((previous) => {
+        const next = new Set(previous)
+        if (group) next.add(group.root.id)
+        next.add(hit.projectId)
+        return next
+      })
+      setSearchOpen(false)
+      await selectSession(session, ref || null)
+    },
+    [groups, selectSession, sessions, showToast, t]
   )
 
   const runAction = useCallback(
@@ -271,14 +373,28 @@ export default function App(): ReactElement {
           onSelectSession={selectSession}
           onSessionMenu={openSessionMenu}
           onCollapseSidebar={toggleSidebar}
+          onOpenContentSearch={openContentSearch}
           onResizeStart={startSidebarResize}
         />
-        {selected ? (
+        {searchOpen ? (
+          <SearchView
+            query={searchQuery}
+            results={searchQuery.trim() ? searchResults : null}
+            progress={searchProgress}
+            inputRef={searchViewRef}
+            projectLabel={projectLabel}
+            onQueryChange={setSearchQuery}
+            onOpenHit={openHit}
+            onClose={() => setSearchOpen(false)}
+            onExpandSidebar={sidebarCollapsed ? toggleSidebar : null}
+          />
+        ) : selected ? (
           <ConversationView
             session={selected}
             project={selectedProject}
             conversation={conversation}
             loading={loadingConversation}
+            highlightRef={highlightRef}
             onResume={() => runAction('resume')}
             onFork={() => runAction('fork')}
             onDelete={() => setDeleteTarget(selected)}
