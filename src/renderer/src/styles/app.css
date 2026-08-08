@@ -1500,3 +1500,187 @@ body.is-resizing {
 .app[data-font-scale='large'] .user-message__text {
   font-size: 13.8px;
 }
+
+/* ── 사이드바 내용 검색 진입 버튼 ────────────────────────────── */
+.sidebar__search-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sidebar__content-search {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 31px;
+  height: 31px;
+  color: var(--text-3);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+}
+
+.sidebar__content-search:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── 대화 내용 검색 화면 ─────────────────────────────────────── */
+/* 헤더는 conversation__header와 같은 타이틀바 보정을 쓴다 (macOS hiddenInset 신호등 자리) */
+.search-view__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 28px 14px 24px;
+  padding-top: calc(var(--titlebar-height) - 30px + 14px);
+  border-bottom: 1px solid var(--border-soft);
+  -webkit-app-region: drag;
+}
+
+.app.is-sidebar-collapsed .search-view__header {
+  padding-left: 84px; /* macOS 신호등 버튼 자리 */
+}
+
+.search-view__header input,
+.search-view__header button {
+  -webkit-app-region: no-drag;
+}
+
+.search-view__input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 13px;
+}
+
+.search-view__input::placeholder {
+  color: var(--text-3);
+}
+
+.search-view__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.search-view__status {
+  padding: 14px clamp(20px, 4vw, 40px) 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.search-view__results {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 14px clamp(20px, 4vw, 40px) 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.search-hit {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--bg-raised);
+  overflow: hidden;
+}
+
+.search-hit__head {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.search-hit__head:hover {
+  background: var(--surface-hover);
+}
+
+.search-hit__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.search-hit__meta {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.search-hit__snippets {
+  list-style: none;
+}
+
+.snippet {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  text-align: left;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+  border-top: 1px solid var(--border-soft);
+}
+
+.search-hit__snippets li:first-child .snippet {
+  border-top: none;
+}
+
+.snippet:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.snippet__role {
+  flex: none;
+  min-width: 46px;
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+
+.snippet__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.snippet mark {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.search-hit__more,
+.search-view__truncated {
+  padding: 9px 14px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* 검색 결과에서 이동해 온 메시지를 잠깐 강조한다 */
+.is-search-hit {
+  border-radius: 10px;
+  animation: search-hit-flash 2.4s ease-out;
+}
+
+@keyframes search-hit-flash {
+  0%,
+  55% {
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
