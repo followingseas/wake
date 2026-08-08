@@ -58,6 +58,20 @@ function folderMatches(project: ProjectInfo, query: string): boolean {
   )
 }
 
+// 목록에 실제로 그릴 세션을 고른다. undefined는 "아직 로딩 중"이라 그대로 흘려보내지만,
+// 검색 중에는 기존 동작대로 빈 배열로 바꿔 "결과 없음" 판정에 걸리게 한다.
+// 자동 생성 세션 필터는 검색 여부와 무관하게 늘 적용하고, 제목 필터만 folderMatched일 때 건너뛴다.
+function visibleSessions(
+  list: SessionMeta[] | undefined,
+  showAgentSessions: boolean,
+  query: string,
+  folderMatched: boolean
+): SessionMeta[] | undefined {
+  if (list === undefined) return query ? [] : undefined
+  const kept = showAgentSessions ? list : list.filter((session) => session.origin === 'user')
+  return query && !folderMatched ? kept.filter((session) => matches(session, query)) : kept
+}
+
 function SessionList({
   items,
   selectedSessionId,
@@ -108,9 +122,13 @@ export function Sidebar({
   onSessionMenu,
   onResizeStart
 }: Props): ReactElement {
-  const { t } = usePrefs()
+  const { t, settings } = usePrefs()
   const searching = query.trim().length > 0
-  const groups = useMemo(() => buildGroups(projects), [projects])
+  const trimmedQuery = searching ? query.trim() : ''
+  const groups = useMemo(
+    () => buildGroups(projects, settings.showAgentSessions),
+    [projects, settings.showAgentSessions]
+  )
 
   return (
     <aside className="sidebar">
@@ -130,21 +148,23 @@ export function Sidebar({
           const rootOpen = searching || expanded.has(root.id)
           const rootSessions = group.synthetic ? [] : sessions[root.id]
           // 그룹 루트 이름이 걸리면 워크트리까지 통째로 보여준다
-          const groupMatched = searching && folderMatches(root, query.trim())
-          const rootVisible =
-            searching && !groupMatched
-              ? (rootSessions ?? []).filter((s) => matches(s, query.trim()))
-              : rootSessions
+          const groupMatched = searching && folderMatches(root, trimmedQuery)
+          const rootVisible = visibleSessions(
+            rootSessions,
+            settings.showAgentSessions,
+            trimmedQuery,
+            groupMatched
+          )
           const worktreeEntries = group.worktrees
-            .map((wt) => {
-              const wtSessions = sessions[wt.id]
-              const wtMatched = groupMatched || folderMatches(wt, query.trim())
-              const visible =
-                searching && !wtMatched
-                  ? (wtSessions ?? []).filter((s) => matches(s, query.trim()))
-                  : wtSessions
-              return { wt, visible }
-            })
+            .map((wt) => ({
+              wt,
+              visible: visibleSessions(
+                sessions[wt.id],
+                settings.showAgentSessions,
+                trimmedQuery,
+                groupMatched || folderMatches(wt, trimmedQuery)
+              )
+            }))
             .filter((entry) => !searching || (entry.visible?.length ?? 0) > 0)
           if (searching && (rootVisible?.length ?? 0) === 0 && worktreeEntries.length === 0) {
             return null
@@ -186,7 +206,9 @@ export function Sidebar({
                           ⎇
                         </span>
                         <span className="worktree__name">{wt.worktree?.name ?? wt.name}</span>
-                        <span className="project__count">{wt.sessionCount}</span>
+                        <span className="project__count">
+                          {settings.showAgentSessions ? wt.sessionCount : wt.userSessionCount}
+                        </span>
                       </button>
                       {wtOpen && (
                         <SessionList
