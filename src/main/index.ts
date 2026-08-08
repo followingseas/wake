@@ -5,6 +5,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { listProjects, listSessions } from './lib/scanner'
 import { parseConversation } from './lib/parser'
+import { initSearchIndex, searchSessions } from './lib/searchIndex'
 import { deleteSession, forkSession, resumeSession, revealSession } from './lib/actions'
 import { loadSettings, saveSettings } from './lib/settings'
 import { listTerminals } from './lib/terminals'
@@ -25,6 +26,9 @@ function registerIpcHandlers(): void {
   ipcMain.handle('projects:list', () => listProjects())
   ipcMain.handle('sessions:list', (_event, projectId: string) => listSessions(projectId))
   ipcMain.handle('conversation:load', (_event, filePath: string) => parseConversation(filePath))
+  ipcMain.handle('search:query', (_event, query: string) =>
+    searchSessions(typeof query === 'string' ? query : '')
+  )
   ipcMain.handle('session:resume', (_event, sessionId: string, cwd: string | null) =>
     resumeSession(sessionId, cwd)
   )
@@ -130,6 +134,7 @@ function createWindow(): void {
   })
 
   initAutoUpdate(mainWindow)
+  initSearchIndex(mainWindow)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
