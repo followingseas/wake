@@ -27,10 +27,10 @@ import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
 import { buildGroups, SYNTHETIC_PREFIX } from './lib/groups'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
-import { SearchView } from './components/SearchView'
+import { SearchPalette } from './components/SearchPalette'
+import { TopBar } from './components/TopBar'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { SettingsDialog } from './components/SettingsDialog'
-import { SidebarExpand } from './components/SidebarExpand'
 import { WakeMark } from './components/WakeMark'
 
 export default function App(): ReactElement {
@@ -52,7 +52,6 @@ export default function App(): ReactElement {
   const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null)
   const [searchFailed, setSearchFailed] = useState(false)
   const [highlightRef, setHighlightRef] = useState<string | null>(null)
-  const searchViewRef = useRef<HTMLInputElement>(null)
   const searchRequestRef = useRef(0)
   const searchRef = useRef<HTMLInputElement>(null)
   const loadedProjects = useRef<Set<string>>(new Set())
@@ -200,12 +199,11 @@ export default function App(): ReactElement {
     setSearchOpen(true)
     // 사이드바에 입력해 둔 질의가 있으면 그대로 이어받는다
     setSearchQuery((previous) => previous || query)
-    window.setTimeout(() => searchViewRef.current?.select(), 0)
   }, [query])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         openContentSearch()
         return
@@ -384,6 +382,11 @@ export default function App(): ReactElement {
         data-font-scale={settings.fontScale}
         style={{ '--sidebar-width': `${sidebarCollapsed ? 0 : sidebarWidth}px` } as CSSProperties}
       >
+        <TopBar
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={toggleSidebar}
+          onOpenSearch={openContentSearch}
+        />
         <Sidebar
           projects={projects}
           sessions={sessions}
@@ -395,24 +398,9 @@ export default function App(): ReactElement {
           onToggleProject={toggleProject}
           onSelectSession={selectSession}
           onSessionMenu={openSessionMenu}
-          onCollapseSidebar={toggleSidebar}
-          onOpenContentSearch={openContentSearch}
           onResizeStart={startSidebarResize}
         />
-        {searchOpen ? (
-          <SearchView
-            query={searchQuery}
-            results={searchResults?.query === searchQuery.trim() ? searchResults : null}
-            progress={searchProgress}
-            failed={searchFailed}
-            inputRef={searchViewRef}
-            projectLabel={projectLabel}
-            onQueryChange={setSearchQuery}
-            onOpenHit={openHit}
-            onClose={() => setSearchOpen(false)}
-            onExpandSidebar={sidebarCollapsed ? toggleSidebar : null}
-          />
-        ) : selected ? (
+        {selected ? (
           <ConversationView
             session={selected}
             project={selectedProject}
@@ -423,11 +411,9 @@ export default function App(): ReactElement {
             onFork={() => runAction('fork')}
             onDelete={() => setDeleteTarget(selected)}
             onReveal={() => window.api.revealSession(selected.filePath)}
-            onExpandSidebar={sidebarCollapsed ? toggleSidebar : null}
           />
         ) : (
           <main className="conversation conversation--empty">
-            {sidebarCollapsed && <SidebarExpand onClick={toggleSidebar} />}
             <div className="empty-state">
               <div className="empty-state__mark">
                 <WakeMark size={84} />
@@ -436,6 +422,18 @@ export default function App(): ReactElement {
               <p className="empty-state__hint">{t('empty.hint')}</p>
             </div>
           </main>
+        )}
+        {searchOpen && (
+          <SearchPalette
+            query={searchQuery}
+            results={searchResults?.query === searchQuery.trim() ? searchResults : null}
+            progress={searchProgress}
+            failed={searchFailed}
+            projectLabel={projectLabel}
+            onQueryChange={setSearchQuery}
+            onOpenHit={openHit}
+            onClose={() => setSearchOpen(false)}
+          />
         )}
         {deleteTarget && (
           <ConfirmDialog

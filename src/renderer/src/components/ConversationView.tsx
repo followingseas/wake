@@ -3,7 +3,6 @@ import type { Conversation, ProjectInfo, SessionMeta, UserMetaInfo } from '../..
 import { formatBytes, formatFullDate, shortenPath } from '../lib/format'
 import { usePrefs } from '../prefs'
 import { AssistantTurn, UserMessage } from './MessageItems'
-import { SidebarExpand } from './SidebarExpand'
 
 // 사용자 액션(! 셸 명령, Esc 중단)과 세션 경계는 시스템 메시지 숨김과 무관하게 항상 보여준다
 const ALWAYS_VISIBLE_META = new Set<UserMetaInfo['kind']>(['bashRun', 'interrupt', 'compact'])
@@ -19,7 +18,6 @@ interface Props {
   onFork: () => void
   onDelete: () => void
   onReveal: () => void
-  onExpandSidebar: (() => void) | null
 }
 
 export function ConversationView({
@@ -31,8 +29,7 @@ export function ConversationView({
   onResume,
   onFork,
   onDelete,
-  onReveal,
-  onExpandSidebar
+  onReveal
 }: Props): ReactElement {
   const { t, settings } = usePrefs()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -60,7 +57,6 @@ export function ConversationView({
   return (
     <main className="conversation">
       <header className="conversation__header">
-        {onExpandSidebar && <SidebarExpand onClick={onExpandSidebar} />}
         <div className="conversation__heading">
           <h1 title={session.title}>{session.title}</h1>
           <p className="conversation__meta">
