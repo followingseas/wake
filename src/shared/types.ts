@@ -1,3 +1,6 @@
+/** 세션을 만든 주체. 'agent'는 도구가 SDK로 띄운 헤드리스 세션이다. */
+export type SessionOrigin = 'user' | 'agent'
+
 export interface WorktreeInfo {
   rootPath: string | null
   rootDirName: string
