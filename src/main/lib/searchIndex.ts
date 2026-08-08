@@ -5,9 +5,20 @@ import type { SearchHit, SearchProgress, SearchResults, SessionMeta } from '../.
 import { listSessions, projectsRoot } from './scanner'
 import { parseConversation } from './parser'
 import { extractSearchMessages, type SearchMessage } from './searchExtract'
-import { indexMessages, matchDocument, type SearchDocument } from './searchMatch'
+import {
+  foldCase,
+  indexMessages,
+  isDocumentFresh,
+  matchDocument,
+  type SearchDocument
+} from './searchMatch'
 
-/** 스키마가 바뀌면 올린다 — 값이 다르면 저장된 인덱스를 버리고 다시 만든다 */
+/**
+ * 저장 형식이 바뀌면 올린다 — 값이 다르면 저장된 인덱스를 버리고 다시 만든다.
+ * StoredDocument의 필드뿐 아니라 parser.ts의 아이템 경계나 uuid 부여 방식이 바뀔 때도
+ * 올려야 한다. ref가 파서 출력의 uuid라서, 그대로 두면 저장된 ref가 오류 없이 엉뚱한
+ * 메시지를 가리킨다.
+ */
 const INDEX_VERSION = 1
 const MAX_SNIPPETS_PER_SESSION = 5
 const MAX_HITS = 200
@@ -17,20 +28,13 @@ const RECONCILE_INTERVAL_MS = 5000
 const INDEX_START_DELAY_MS = 1500
 
 /** 디스크에 저장하는 형태 — 소문자 사본은 적재할 때 다시 만든다 */
-interface StoredDocument {
-  sessionId: string
-  projectId: string
-  filePath: string
-  title: string
-  updatedAt: number
-  fileSize: number
-  messages: SearchMessage[]
-}
+type StoredDocument = Omit<SearchDocument, 'messages'> & { messages: SearchMessage[] }
 
 const documents = new Map<string, SearchDocument>()
 let ready = false
+let failed = false
 let revision = 0
-let progress: SearchProgress = { done: 0, total: 0, ready: false, revision: 0 }
+let progress: SearchProgress = { done: 0, total: 0, ready: false, revision: 0, failed: false }
 let running: Promise<void> | null = null
 let lastReconcileAt = 0
 let progressWindow: BrowserWindow | null = null
@@ -40,10 +44,20 @@ function indexPath(): string {
 }
 
 function emitProgress(done: number, total: number): void {
-  progress = { done, total, ready, revision }
+  progress = { done, total, ready, revision, failed }
   if (progressWindow && !progressWindow.isDestroyed()) {
     progressWindow.webContents.send('search:progress', progress)
   }
+}
+
+function isStoredMessage(value: unknown): value is SearchMessage {
+  const message = value as SearchMessage | null
+  return (
+    !!message &&
+    typeof message.ref === 'string' &&
+    typeof message.text === 'string' &&
+    (message.role === 'user' || message.role === 'assistant')
+  )
 }
 
 function isStoredDocument(value: unknown): value is StoredDocument {
@@ -56,32 +70,45 @@ function isStoredDocument(value: unknown): value is StoredDocument {
     typeof stored.title === 'string' &&
     typeof stored.updatedAt === 'number' &&
     typeof stored.fileSize === 'number' &&
-    Array.isArray(stored.messages)
+    Array.isArray(stored.messages) &&
+    stored.messages.every(isStoredMessage)
   )
 }
 
 async function loadFromDisk(): Promise<void> {
-  const raw = await readFile(indexPath(), 'utf8').catch(() => '')
-  if (!raw) return
+  let raw: string
+  try {
+    raw = await readFile(indexPath(), 'utf8')
+  } catch (error) {
+    // 첫 실행이면 파일이 없는 게 정상이다. 다른 이유라면 매 실행 전체 재인덱싱으로
+    // 이어지므로 흔적을 남긴다
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.error('[search] 저장된 인덱스를 읽지 못했다', error)
+    }
+    return
+  }
+
   const lines = raw.split('\n')
   let version: unknown
   try {
     version = (JSON.parse(lines[0]) as { v?: unknown }).v
   } catch {
-    // 헤더를 읽을 수 없으면 인덱스를 통째로 버리고 다시 만든다
-    return
+    version = null
   }
   if (version !== INDEX_VERSION) return
+
   for (const line of lines.slice(1)) {
     if (!line.trim()) continue
+    let stored: unknown
     try {
-      const stored: unknown = JSON.parse(line)
-      if (!isStoredDocument(stored)) continue
-      documents.set(stored.filePath, { ...stored, messages: indexMessages(stored.messages) })
+      stored = JSON.parse(line)
     } catch {
-      // 줄 하나가 깨져도 나머지는 살린다 (forEachJsonlLine과 같은 관용)
+      // 줄 하나가 깨져도 나머지는 살린다. JSON.parse만 감싼다 — 아래 변환에서 나는
+      // 예외는 데이터가 아니라 이쪽 코드의 문제다
       continue
     }
+    if (!isStoredDocument(stored)) continue
+    documents.set(stored.filePath, { ...stored, messages: indexMessages(stored.messages) })
   }
 }
 
@@ -91,12 +118,7 @@ async function persist(): Promise<void> {
   const lines = [JSON.stringify({ v: INDEX_VERSION })]
   for (const document of documents.values()) {
     const stored: StoredDocument = {
-      sessionId: document.sessionId,
-      projectId: document.projectId,
-      filePath: document.filePath,
-      title: document.title,
-      updatedAt: document.updatedAt,
-      fileSize: document.fileSize,
+      ...document,
       messages: document.messages.map(({ ref, role, text }) => ({ ref, role, text }))
     }
     lines.push(JSON.stringify(stored))
@@ -107,17 +129,26 @@ async function persist(): Promise<void> {
   await rename(temporary, path)
 }
 
-async function listProjectIds(): Promise<string[]> {
-  const dirents = await readdir(projectsRoot(), { withFileTypes: true }).catch(() => [])
-  return dirents.filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name)
+/** null이면 루트를 읽지 못한 것이다 — 빈 배열("프로젝트가 없다")과 섞으면 정리 단계가 인덱스를 통째로 비운다 */
+async function listProjectIds(): Promise<string[] | null> {
+  try {
+    const dirents = await readdir(projectsRoot(), { withFileTypes: true })
+    return dirents.filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name)
+  } catch (error) {
+    // Claude Code를 아직 쓴 적이 없으면 루트가 없는 게 정상이다
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    console.error('[search] 프로젝트 루트를 읽지 못했다', error)
+    return null
+  }
 }
 
 async function buildDocument(meta: SessionMeta): Promise<SearchDocument | null> {
-  // 세션 하나가 깨져도 나머지 인덱싱은 계속한다
-  const conversation = await parseConversation(meta.filePath).catch(() => null)
+  const conversation = await parseConversation(meta.filePath).catch((error) => {
+    // 세션 하나가 깨져도 나머지 인덱싱은 계속하되, 조용히 사라지게 두지는 않는다
+    console.error('[search] 세션 파싱 실패', meta.filePath, error)
+    return null
+  })
   if (!conversation) return null
-  const messages = extractSearchMessages(conversation)
-  if (messages.length === 0) return null
   return {
     sessionId: meta.id,
     projectId: meta.projectId,
@@ -125,12 +156,16 @@ async function buildDocument(meta: SessionMeta): Promise<SearchDocument | null> 
     title: meta.title,
     updatedAt: meta.updatedAt,
     fileSize: meta.fileSize,
-    messages: indexMessages(messages)
+    // 검색할 본문이 없는 세션도 빈 문서로 남긴다. 인덱스에서 빼면 아래 스킵 검사가 영영
+    // 걸리지 않아 매 정합마다 다시 파싱하고 revision을 올린다
+    messages: indexMessages(extractSearchMessages(conversation))
   }
 }
 
 async function reconcile(): Promise<void> {
   const projectIds = await listProjectIds()
+  // 루트를 못 읽은 채로 진행하면 아래 정리 단계가 "세션이 전부 사라졌다"로 오판한다
+  if (projectIds === null) throw new Error('search: projects root unreadable')
   emitProgress(0, projectIds.length)
 
   const seen = new Set<string>()
@@ -138,26 +173,32 @@ async function reconcile(): Promise<void> {
   let done = 0
 
   for (const projectId of projectIds) {
-    const metas = await listSessions(projectId).catch(() => [] as SessionMeta[])
-    for (const meta of metas) {
-      seen.add(meta.filePath)
-      const existing = documents.get(meta.filePath)
-      // updatedAt(마지막 엔트리 시각)과 fileSize가 모두 같으면 내용이 그대로다
-      if (
-        existing &&
-        existing.updatedAt === meta.updatedAt &&
-        existing.fileSize === meta.fileSize
-      ) {
-        continue
+    const metas = await listSessions(projectId).catch((error) => {
+      console.error('[search] 세션 목록을 읽지 못했다', projectId, error)
+      return null
+    })
+    if (metas === null) {
+      // 목록을 못 읽었을 뿐이므로, 이 프로젝트의 기존 문서를 사라진 것으로 취급하지 않는다
+      for (const document of documents.values()) {
+        if (document.projectId === projectId) seen.add(document.filePath)
       }
-      const document = await buildDocument(meta)
-      if (document) documents.set(meta.filePath, document)
-      else documents.delete(meta.filePath)
-      changed = true
+    } else {
+      for (const meta of metas) {
+        seen.add(meta.filePath)
+        if (isDocumentFresh(documents.get(meta.filePath), meta)) continue
+        const document = await buildDocument(meta)
+        if (document) {
+          documents.set(meta.filePath, document)
+          changed = true
+        } else if (documents.delete(meta.filePath)) {
+          changed = true
+        }
+      }
     }
     done += 1
     emitProgress(done, projectIds.length)
-    // 인덱싱이 렌더러의 IPC를 굶기지 않도록 프로젝트 사이에서 이벤트 루프를 넘긴다
+    // 메타가 전부 캐시에 걸리면 프로젝트 루프가 거의 동기로 돈다. 그때도 렌더러 IPC가
+    // 끼어들 틈이 생기도록 프로젝트마다 한 번 넘긴다
     await new Promise((resolve) => setImmediate(resolve))
   }
 
@@ -168,6 +209,7 @@ async function reconcile(): Promise<void> {
   }
 
   ready = true
+  failed = false
   lastReconcileAt = Date.now()
   if (changed) revision += 1
   emitProgress(done, projectIds.length)
@@ -183,10 +225,11 @@ function ensureIndex(): Promise<void> {
         if (!ready) await loadFromDisk()
         await reconcile()
       } catch (error) {
-        // 정합 내부는 파일 단위로 이미 방어돼 있다. 여기까지 온 예외는 검색을 영영
-        // "인덱싱 중"에 묶어두지 않도록 준비 완료로 표시하고 다음 요청에서 다시 시도한다.
+        // ready를 세우지 않으면 검색이 영영 "인덱싱 중"에 묶인다. 대신 failed로 인덱스가
+        // 불완전함을 알려, 빈 결과가 "그런 대화는 없다"로 읽히지 않게 한다
         console.error('[search] 인덱싱 실패', error)
         ready = true
+        failed = true
         lastReconcileAt = Date.now()
         emitProgress(progress.done, progress.total)
       }
@@ -204,18 +247,21 @@ export function initSearchIndex(window: BrowserWindow): void {
 
 export async function searchSessions(query: string): Promise<SearchResults> {
   const trimmed = query.trim()
-  if (!trimmed) return { query: trimmed, hits: [], truncated: false, indexing: !ready }
+  if (!trimmed) {
+    return { query: trimmed, hits: [], truncated: false, indexing: !ready, degraded: failed }
+  }
 
   // 정합을 기다리지 않는다 — 지금 인덱스로 즉시 답하고, 갱신되면 revision이 올라
-  // 렌더러가 같은 질의를 다시 던진다. 검색이 디스크 스캔에 묶이면 안 된다
+  // 렌더러가 같은 질의를 다시 던진다
   if (!ready || Date.now() - lastReconcileAt > RECONCILE_INTERVAL_MS) {
     void ensureIndex()
   }
 
-  const lowered = trimmed.toLowerCase()
+  // 본문과 같은 함수로 접어야 매칭 인덱스를 원문 슬라이스에 그대로 쓸 수 있다
+  const folded = foldCase(trimmed)
   const hits: SearchHit[] = []
   for (const document of documents.values()) {
-    const hit = matchDocument(document, lowered, MAX_SNIPPETS_PER_SESSION)
+    const hit = matchDocument(document, folded, MAX_SNIPPETS_PER_SESSION)
     if (hit) hits.push(hit)
   }
   hits.sort((a, b) => b.updatedAt - a.updatedAt)
@@ -224,6 +270,7 @@ export async function searchSessions(query: string): Promise<SearchResults> {
     query: trimmed,
     hits: hits.slice(0, MAX_HITS),
     truncated: hits.length > MAX_HITS,
-    indexing: !ready
+    indexing: !ready,
+    degraded: failed
   }
 }
