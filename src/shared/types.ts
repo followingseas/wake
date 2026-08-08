@@ -156,6 +156,24 @@ export interface SearchHit {
   snippets: SearchSnippet[]
 }
 
+export interface SearchResults {
+  query: string
+  hits: SearchHit[]
+  /** 세션 수 상한에 걸려 잘렸으면 true */
+  truncated: boolean
+  /** 최초 인덱스 구축 중이라 부분 결과면 true */
+  indexing: boolean
+}
+
+export interface SearchProgress {
+  /** 처리한 프로젝트 수 */
+  done: number
+  /** 전체 프로젝트 수 — 집계 전이면 0 */
+  total: number
+  /** 최초 인덱스 구축이 끝났으면 true */
+  ready: boolean
+}
+
 export interface ClaudeHistoryApi {
   listProjects: () => Promise<ProjectInfo[]>
   listSessions: (projectId: string) => Promise<SessionMeta[]>
