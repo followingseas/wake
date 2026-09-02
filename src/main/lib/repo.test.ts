@@ -34,8 +34,11 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  process.env.HOME = savedHome.HOME
-  process.env.USERPROFILE = savedHome.USERPROFILE
+  // undefined 를 대입하면 문자열 'undefined' 가 들어가므로, 없던 키는 지워서 되돌린다
+  for (const [key, value] of Object.entries(savedHome)) {
+    if (value === undefined) delete process.env[key]
+    else process.env[key] = value
+  }
   rmSync(base, { recursive: true, force: true })
 })
 
