@@ -18,7 +18,8 @@ interface Props {
   query: string
   searchRef: RefObject<HTMLInputElement | null>
   onQueryChange: (query: string) => void
-  onToggleProject: (projectId: string) => void
+  /** 펼침 키와, 펼칠 때 세션을 읽어야 하는 프로젝트 id 목록 */
+  onToggle: (key: string, projectIds: string[]) => void
   onSelectSession: (session: SessionMeta) => void
   onSessionMenu: (session: SessionMeta) => void
   onResizeStart: (event: ReactMouseEvent) => void
@@ -49,17 +50,25 @@ function matches(session: SessionMeta, query: string): boolean {
   )
 }
 
-/** 폴더 이름이 걸리면 그 안의 세션은 제목과 무관하게 전부 보여준다 */
-function folderMatches(project: ProjectInfo, query: string): boolean {
-  const lowered = query.toLowerCase()
-  return (
-    project.name.toLowerCase().includes(lowered) ||
-    (project.worktree?.name.toLowerCase().includes(lowered) ?? false)
-  )
+/** 폴더 이름이 걸리면 그 안의 세션은 제목 필터만 건너뛴다. 자동 세션 필터는 그대로 받는다 */
+function folderMatches(name: string, query: string): boolean {
+  return name.toLowerCase().includes(query.toLowerCase())
+}
+
+// 한 항목에 프로젝트가 여럿이면 세션 목록을 합친다. 하나면 listSessions 가 이미 최근 순이라
+// 그대로 넘기고, 둘 이상이면 flat 으로 새 배열을 만들어 정렬한다 — 상태에 든 배열을 제자리
+// 정렬하면 안 된다. 하나라도 안 왔으면 로딩 중으로 둔다. 온 것만 보여주면 빠진 프로젝트를
+// 알아챌 길이 없다.
+function mergeSessions(lists: (SessionMeta[] | undefined)[]): SessionMeta[] | undefined {
+  if (lists.some((list) => list === undefined)) return undefined
+  const loaded = lists as SessionMeta[][]
+  if (loaded.length === 1) return loaded[0]
+  return loaded.flat().sort((a, b) => b.updatedAt - a.updatedAt)
 }
 
 // 목록에 실제로 그릴 세션을 고른다. undefined는 "아직 로딩 중"이라 그대로 흘려보내지만,
-// 검색 중에는 기존 동작대로 빈 배열로 바꿔 "결과 없음" 판정에 걸리게 한다.
+// 검색 중에는 빈 배열로 바꿔 "결과 없음" 판정에 걸리게 한다 — 아직 읽지 않은 프로젝트가
+// 검색 결과에 빈 그룹으로 남지 않게 하려는 것이다.
 // 자동 생성 세션 필터는 검색 여부와 무관하게 늘 적용하고, 제목 필터만 folderMatched일 때 건너뛴다.
 function visibleSessions(
   list: SessionMeta[] | undefined,
@@ -120,7 +129,7 @@ export function Sidebar({
   query,
   searchRef,
   onQueryChange,
-  onToggleProject,
+  onToggle,
   onSelectSession,
   onSessionMenu,
   onResizeStart
@@ -147,46 +156,49 @@ export function Sidebar({
       </div>
       <nav className="sidebar__list">
         {groups.map((group) => {
-          const root = group.root
-          const rootOpen = searching || expanded.has(root.id)
-          const rootSessions = group.synthetic ? [] : sessions[root.id]
-          // 그룹 루트 이름이 걸리면 워크트리까지 통째로 보여준다
-          const groupMatched = searching && folderMatches(root, trimmedQuery)
+          const open = searching || expanded.has(group.id)
+          // 그룹 이름이 걸리면 워크트리·하위 폴더까지 통째로 보여준다
+          const groupMatched = searching && folderMatches(group.name, trimmedQuery)
           const rootVisible = visibleSessions(
-            rootSessions,
+            mergeSessions(group.roots.map((root) => sessions[root.id])),
             settings.showAgentSessions,
             trimmedQuery,
             groupMatched
           )
-          const worktreeEntries = group.worktrees
-            .map((wt) => ({
-              wt,
+          const subEntries = group.subs
+            .map((sub) => ({
+              sub,
               visible: visibleSessions(
-                sessions[wt.id],
+                mergeSessions(sub.projects.map((project) => sessions[project.id])),
                 settings.showAgentSessions,
                 trimmedQuery,
-                groupMatched || folderMatches(wt, trimmedQuery)
+                groupMatched || folderMatches(sub.name, trimmedQuery)
               )
             }))
             .filter((entry) => !searching || (entry.visible?.length ?? 0) > 0)
-          if (searching && (rootVisible?.length ?? 0) === 0 && worktreeEntries.length === 0) {
+          if (searching && (rootVisible?.length ?? 0) === 0 && subEntries.length === 0) {
             return null
           }
           return (
-            <section key={root.id} className="project">
+            <section key={group.id} className="project">
               <button
                 className="project__header"
-                onClick={() => onToggleProject(root.id)}
-                aria-expanded={rootOpen}
+                onClick={() =>
+                  onToggle(
+                    group.id,
+                    group.roots.map((root) => root.id)
+                  )
+                }
+                aria-expanded={open}
               >
-                <Chevron open={rootOpen} />
-                <span className="project__name">{root.name}</span>
+                <Chevron open={open} />
+                <span className="project__name">{group.name}</span>
                 <span className="project__count">{group.totalSessions}</span>
               </button>
-              {rootOpen && root.realPath && (
-                <p className="project__path">{shortenPath(root.realPath)}</p>
+              {open && group.rootPath && (
+                <p className="project__path">{shortenPath(group.rootPath)}</p>
               )}
-              {rootOpen && !group.synthetic && (
+              {open && group.roots.length > 0 && (
                 <SessionList
                   items={rootVisible}
                   selectedSessionId={selectedSessionId}
@@ -194,26 +206,29 @@ export function Sidebar({
                   onSessionMenu={onSessionMenu}
                 />
               )}
-              {rootOpen &&
-                worktreeEntries.map(({ wt, visible }) => {
-                  const wtOpen = searching || expanded.has(wt.id)
+              {open &&
+                subEntries.map(({ sub, visible }) => {
+                  const subOpen = searching || expanded.has(sub.id)
                   return (
-                    <div key={wt.id} className="worktree">
+                    <div key={sub.id} className="sub">
                       <button
-                        className="worktree__header"
-                        onClick={() => onToggleProject(wt.id)}
-                        aria-expanded={wtOpen}
+                        className="sub__header"
+                        onClick={() =>
+                          onToggle(
+                            sub.id,
+                            sub.projects.map((project) => project.id)
+                          )
+                        }
+                        aria-expanded={subOpen}
                       >
-                        <Chevron open={wtOpen} />
-                        <span className="worktree__mark" aria-hidden="true">
-                          ⎇
+                        <Chevron open={subOpen} />
+                        <span className="sub__mark" aria-hidden="true">
+                          {sub.kind === 'worktree' ? '⎇' : '/'}
                         </span>
-                        <span className="worktree__name">{wt.worktree?.name ?? wt.name}</span>
-                        <span className="project__count">
-                          {settings.showAgentSessions ? wt.sessionCount : wt.userSessionCount}
-                        </span>
+                        <span className="sub__name">{sub.name}</span>
+                        <span className="project__count">{sub.totalSessions}</span>
                       </button>
-                      {wtOpen && (
+                      {subOpen && (
                         <SessionList
                           items={visible}
                           selectedSessionId={selectedSessionId}

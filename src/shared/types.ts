@@ -1,11 +1,37 @@
 /** 세션을 만든 주체. 'agent'는 도구가 SDK로 띄운 헤드리스 세션이다. */
 export type SessionOrigin = 'user' | 'agent'
 
-export interface WorktreeInfo {
-  rootPath: string | null
-  rootDirName: string
+/**
+ * 저장소 루트가 아닌 프로젝트가 루트와 맺는 관계.
+ * - worktree: 도구가 만든 워크트리 자리. 살아 있으면 .git 으로, 지워졌으면 경로 모양으로 판정한다
+ * - subdir: 저장소 안의 하위 폴더
+ */
+export interface RepoSub {
+  kind: 'worktree' | 'subdir'
+  /**
+   * 사이드바에 보일 이름. subdir 는 루트 기준 상대 경로, worktree 는 워크트리명이고
+   * 워크트리 안의 하위 폴더면 뒤에 워크트리 기준 상대 경로가 붙는다
+   */
   name: string
 }
+
+/**
+ * 프로젝트가 속한 저장소. sub 가 null 이면 프로젝트 자신이 저장소 루트(또는 저장소 밖의 독립 폴더)다.
+ * rootPath 는 심볼릭 링크를 푼 경로라 같은 저장소면 어디로 들어왔든 같은 문자열이다.
+ */
+export type RepoInfo =
+  | {
+      /** 저장소 루트 절대 경로. realPath 가 없으면 null */
+      rootPath: string | null
+      sub: null
+    }
+  | {
+      /** 저장소 루트(메인 워크트리) 절대 경로. realPath 가 없어 디렉터리명으로만 추정했으면 null */
+      rootPath: string | null
+      /** 저장소 루트의 프로젝트 디렉터리명. rootPath 없이 루트를 찾는 폴백 키라 모르면 null */
+      rootDirName: string | null
+      sub: RepoSub
+    }
 
 export interface ProjectInfo {
   id: string
@@ -17,7 +43,7 @@ export interface ProjectInfo {
   /** 자동 생성(agent) 세션을 뺀 개수. 목록 필터가 꺼져 있을 때 배지에 쓴다 */
   userSessionCount: number
   lastActiveAt: number
-  worktree: WorktreeInfo | null
+  repo: RepoInfo
 }
 
 export interface SessionMeta {

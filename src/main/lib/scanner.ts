@@ -5,27 +5,54 @@ import type { ProjectInfo, SessionMeta, SessionOrigin } from '../../shared/types
 import { forEachJsonlLine, readHead } from './jsonl'
 import { getMessage, isRealUserPrompt, summarize } from './entries'
 import { originFromEntrypoint } from './sessionOrigin'
-import { detectWorktree } from './worktree'
+import { detectRepo } from './repo'
 
 export function projectsRoot(): string {
   // CHV_DATA_DIR: 개발·데모용 데이터 디렉토리 오버라이드
   return process.env.CHV_DATA_DIR ?? join(homedir(), '.claude', 'projects')
 }
 
-async function detectRealPath(sessionFiles: string[]): Promise<string | null> {
+/** Claude Code 는 cwd 의 영숫자 아닌 글자를 전부 '-'로 바꿔 프로젝트 디렉터리명을 만든다 */
+function projectDirName(cwd: string): string {
+  return cwd.replace(/[^A-Za-z0-9]/g, '-')
+}
+
+function stringField(entry: Record<string, unknown>, key: string): string | null {
+  const value = entry[key]
+  return typeof value === 'string' && value ? value : null
+}
+
+// 프로젝트 디렉터리명은 세션을 시작한 cwd 로 정해지지만, 파일 속 cwd 는 그 뒤에 바뀔 수 있다.
+// EnterWorktree 로 워크트리에 들어간 세션은 첫 엔트리부터 워크트리 경로를 싣고, 시작 cwd 는
+// worktreeSession.originalCwd(worktree-state 엔트리)에만 남는다. 그래서 어느 엔트리든 두 필드를
+// 다 후보로 보고 디렉터리명과 맞아떨어지는 쪽을 우선하며, 하나도 없을 때만 처음 만난 후보로 물러선다.
+async function detectRealPath(dirName: string, sessionFiles: string[]): Promise<string | null> {
+  let first: string | null = null
   for (const file of sessionFiles) {
     const head = await readHead(file, 32 * 1024).catch(() => '')
     for (const line of head.split('\n')) {
-      if (!line.includes('"cwd"')) continue
+      if (!line.includes('"cwd"') && !line.includes('"originalCwd"')) continue
+      let entry: Record<string, unknown>
       try {
-        const entry = JSON.parse(line)
-        if (typeof entry.cwd === 'string' && entry.cwd) return entry.cwd
+        entry = JSON.parse(line)
       } catch {
         continue
       }
+      const worktreeSession = entry.worktreeSession
+      const candidates = [
+        stringField(entry, 'cwd'),
+        typeof worktreeSession === 'object' && worktreeSession !== null
+          ? stringField(worktreeSession as Record<string, unknown>, 'originalCwd')
+          : null
+      ]
+      for (const candidate of candidates) {
+        if (!candidate) continue
+        if (projectDirName(candidate) === dirName) return candidate
+        first ??= candidate
+      }
     }
   }
-  return null
+  return first
 }
 
 interface SessionHead {
@@ -82,7 +109,10 @@ export async function listProjects(): Promise<ProjectInfo[]> {
     if (sessionFiles.length === 0) continue
 
     sessionFiles.sort((a, b) => b.mtimeMs - a.mtimeMs)
-    const realPath = await detectRealPath(sessionFiles.slice(0, 3).map((f) => f.path))
+    const realPath = await detectRealPath(
+      dirent.name,
+      sessionFiles.slice(0, 3).map((f) => f.path)
+    )
     projects.push({
       id: dirent.name,
       dirName: dirent.name,
@@ -94,7 +124,7 @@ export async function listProjects(): Promise<ProjectInfo[]> {
       sessionCount: sessionFiles.length,
       userSessionCount: sessionFiles.filter((f) => f.origin === 'user').length,
       lastActiveAt: sessionFiles[0].mtimeMs,
-      worktree: detectWorktree(dirent.name, realPath)
+      repo: await detectRepo(dirent.name, realPath)
     })
   }
 
