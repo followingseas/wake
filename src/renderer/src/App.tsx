@@ -24,7 +24,7 @@ type UpdateBannerState =
   | { mode: 'ready'; version: string }
 import { makeTranslate, resolveLanguage } from './i18n'
 import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
-import { buildGroups, SYNTHETIC_PREFIX } from './lib/groups'
+import { buildGroups, type SubGroup } from './lib/groups'
 import { shortcut } from './lib/platform'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
@@ -105,27 +105,45 @@ export default function App(): ReactElement {
     window.setTimeout(() => setToast(null), 2600)
   }, [])
 
-  const loadSessions = useCallback(async (projectId: string) => {
-    if (projectId.startsWith(SYNTHETIC_PREFIX)) return
-    if (loadedProjects.current.has(projectId)) return
-    loadedProjects.current.add(projectId)
-    const metas = await window.api.listSessions(projectId)
-    setSessions((prev) => ({ ...prev, [projectId]: metas }))
-    // 시작 시 카운트는 파일 수 휴리스틱이라 실제 목록으로 보정한다.
-    // 상태에서 지우지는 않는다 — 빈 그룹을 숨기는 일은 buildGroups가 맡고,
-    // 그래야 표시 토글을 되돌렸을 때 프로젝트가 다시 나타난다.
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.id === projectId
-          ? {
-              ...p,
-              sessionCount: metas.length,
-              userSessionCount: metas.filter((m) => m.origin === 'user').length
-            }
-          : p
+  // 언어가 바뀌어도 loadSessions 가 새로 만들어지지 않게 한다. 시작 효과가 이 함수에 묶여 있어
+  // 함수가 바뀌면 프로젝트를 처음부터 다시 읽는다
+  const translateRef = useRef(t)
+  useEffect(() => {
+    translateRef.current = t
+  }, [t])
+
+  const loadSessions = useCallback(
+    async (projectId: string) => {
+      if (loadedProjects.current.has(projectId)) return
+      loadedProjects.current.add(projectId)
+      let metas: SessionMeta[]
+      try {
+        metas = await window.api.listSessions(projectId)
+      } catch (error) {
+        // 그냥 놓치면 스피너가 영원히 돌고 다시 시도할 길도 없다. 표시를 지워 다음 펼침에서 재시도하게 한다
+        loadedProjects.current.delete(projectId)
+        console.error('[sidebar] 세션 목록 조회 실패', projectId, error)
+        showToast(translateRef.current('sidebar.loadFailed'))
+        return
+      }
+      setSessions((prev) => ({ ...prev, [projectId]: metas }))
+      // 시작 시 카운트는 파일 수 휴리스틱이라 실제 목록으로 보정한다.
+      // 상태에서 지우지는 않는다 — 빈 그룹을 숨기는 일은 buildGroups가 맡고,
+      // 그래야 표시 토글을 되돌렸을 때 프로젝트가 다시 나타난다.
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.id === projectId
+            ? {
+                ...p,
+                sessionCount: metas.length,
+                userSessionCount: metas.filter((m) => m.origin === 'user').length
+              }
+            : p
+        )
       )
-    )
-  }, [])
+    },
+    [showToast]
+  )
 
   useEffect(() => {
     // electron-updater 이벤트(다운로드 진행·완료)가 배너 상태를 구동한다
@@ -149,15 +167,19 @@ export default function App(): ReactElement {
           }
         })
       }
-      window.api.listProjects().then((list) => {
-        setProjects(list)
-        // 최상위는 그룹 단위이므로 첫 그룹의 루트를 펼친다
-        const first = buildGroups(list, info.settings.showAgentSessions)[0]
-        if (first) {
-          setExpanded(new Set([first.root.id]))
-          loadSessions(first.root.id)
-        }
-      })
+      window.api
+        .listProjects()
+        .then((list) => {
+          setProjects(list)
+          // 최상위는 그룹 단위이므로 첫 그룹을 펼치고 그 루트 프로젝트들의 세션을 읽는다
+          const first = buildGroups(list, info.settings.showAgentSessions)[0]
+          if (first) {
+            setExpanded(new Set([first.id]))
+            first.roots.forEach((root) => loadSessions(root.id))
+          }
+        })
+        // 조용히 죽으면 "세션 없음" 안내가 떠서 읽기 실패와 구분이 안 된다
+        .catch((error) => console.error('[startup] 프로젝트 목록 조회 실패', error))
     })
     return unsubscribe
   }, [loadSessions])
@@ -242,19 +264,20 @@ export default function App(): ReactElement {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [openContentSearch])
 
-  const toggleProject = useCallback(
-    (projectId: string) => {
+  // key 는 그룹 id 이거나 하위 항목 id 다. 한 항목에 프로젝트가 여럿일 수 있어 읽을 대상을 따로 받는다
+  const toggleExpanded = useCallback(
+    (key: string, projectIds: string[]) => {
+      const opening = !expanded.has(key)
       setExpanded((prev) => {
         const next = new Set(prev)
-        if (next.has(projectId)) next.delete(projectId)
-        else {
-          next.add(projectId)
-          loadSessions(projectId)
-        }
+        if (opening) next.add(key)
+        else next.delete(key)
         return next
       })
+      // 상태 갱신 함수 안에서 부르면 React 가 갱신 함수를 두 번 돌릴 때 요청도 두 번 나간다
+      if (opening) projectIds.forEach((projectId) => loadSessions(projectId))
     },
-    [loadSessions]
+    [expanded, loadSessions]
   )
 
   const selectSession = useCallback(
@@ -308,12 +331,13 @@ export default function App(): ReactElement {
     (projectId: string) => {
       const project = projects.find((candidate) => candidate.id === projectId)
       if (!project) return projectId
+      const sub = project.repo.sub
       const group = groups.find((candidate) =>
-        candidate.worktrees.some((worktree) => worktree.id === projectId)
+        candidate.subs.some((slot) => slot.projects.some((p) => p.id === projectId))
       )
-      // 워크트리 세션은 어느 저장소의 어느 워크트리인지 같이 보여야 구분이 된다
-      if (group) return `${group.root.name} ⎇ ${project.worktree?.name ?? project.name}`
-      return project.name
+      // 워크트리·하위 폴더 세션은 어느 저장소의 어디인지 같이 보여야 구분이 된다
+      if (!sub || !group) return project.name
+      return sub.kind === 'worktree' ? `${group.name} ⎇ ${sub.name}` : `${group.name}/${sub.name}`
     },
     [groups, projects]
   )
@@ -340,22 +364,26 @@ export default function App(): ReactElement {
         showToast(t('search.missing'))
         return
       }
-      // 워크트리 세션은 그룹 루트까지 펼쳐야 사이드바에서 선택 상태가 보인다
+      // 검색으로 연 세션은 그 그룹까지 펼쳐야 사이드바에서 선택 상태가 보인다. 하위 항목이면 그 항목도 펼친다
+      const inSlot = (slot: SubGroup): boolean =>
+        slot.projects.some((project) => project.id === hit.projectId)
       const group = groups.find(
         (candidate) =>
-          candidate.root.id === hit.projectId ||
-          candidate.worktrees.some((worktree) => worktree.id === hit.projectId)
+          candidate.roots.some((root) => root.id === hit.projectId) || candidate.subs.some(inSlot)
       )
+      const slot = group?.subs.find(inSlot)
       setExpanded((previous) => {
         const next = new Set(previous)
-        if (group) next.add(group.root.id)
-        next.add(hit.projectId)
+        if (group) next.add(group.id)
+        if (slot) next.add(slot.id)
         return next
       })
+      // 한 항목에 프로젝트가 여럿이면 나머지 프로젝트의 세션도 읽어야 목록이 온전하다
+      for (const project of slot?.projects ?? group?.roots ?? []) loadSessions(project.id)
       setSearchOpen(false)
       await selectSession(session, ref || null)
     },
-    [groups, selectSession, sessions, showToast, t]
+    [groups, loadSessions, selectSession, sessions, showToast, t]
   )
 
   const runAction = useCallback(
@@ -424,7 +452,7 @@ export default function App(): ReactElement {
           query={query}
           searchRef={searchRef}
           onQueryChange={setQuery}
-          onToggleProject={toggleProject}
+          onToggle={toggleExpanded}
           onSelectSession={selectSession}
           onSessionMenu={openSessionMenu}
           onResizeStart={startSidebarResize}

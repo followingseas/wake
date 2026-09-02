@@ -276,12 +276,12 @@ button {
   user-select: none;
 }
 
-/* ── worktree 서브그룹 (루트 프로젝트 하위) ──────────────────── */
-.worktree {
+/* ── 워크트리·하위 폴더 서브그룹 (저장소 그룹 하위) ─────────────── */
+.sub {
   margin-left: 14px;
 }
 
-.worktree__header {
+.sub__header {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -294,21 +294,21 @@ button {
   text-align: left;
 }
 
-.worktree__header:hover {
+.sub__header:hover {
   background: var(--surface);
 }
 
-.worktree__header:hover .project__chevron {
+.sub__header:hover .project__chevron {
   color: var(--accent);
 }
 
-.worktree__mark {
+.sub__mark {
   color: var(--text-3);
   font-size: 11px;
   flex-shrink: 0;
 }
 
-.worktree__name {
+.sub__name {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
