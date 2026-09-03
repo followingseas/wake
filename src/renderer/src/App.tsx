@@ -508,7 +508,7 @@ export default function App(): ReactElement {
           />
         )}
         {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
-        {update && (
+        {update && update.mode !== 'dismissed' && (
           <div className="update-banner" role="status">
             <span className="update-banner__text">
               {(update.mode === 'link' || update.mode === 'available') &&
@@ -523,7 +523,7 @@ export default function App(): ReactElement {
                 className="btn btn--primary"
                 onClick={() => {
                   window.api.openExternal(update.url)
-                  applyUpdate(null)
+                  applyUpdate({ mode: 'dismissed' })
                 }}
               >
                 {t('update.download')}
@@ -537,6 +537,9 @@ export default function App(): ReactElement {
                   const version = update.version
                   applyUpdate({ mode: 'requested', version })
                   window.api.downloadUpdate().catch(() => {
+                    // 'error' 이벤트가 이미 되돌렸으면 두 번 알리지 않는다. 취소처럼 이벤트가
+                    // 오지 않는 실패만 여기서 수습한다
+                    if (updateRef.current?.mode !== 'requested') return
                     applyUpdate({ mode: 'available', version })
                     showToast(t('update.failed'))
                   })
@@ -552,7 +555,7 @@ export default function App(): ReactElement {
             )}
             <button
               className="update-banner__close"
-              onClick={() => applyUpdate(null)}
+              onClick={() => applyUpdate({ mode: 'dismissed' })}
               aria-label={t('common.close')}
             >
               ×

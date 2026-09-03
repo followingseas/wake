@@ -6,6 +6,7 @@ const requested: UpdateBannerState = { mode: 'requested', version: '0.9.1' }
 const downloading: UpdateBannerState = { mode: 'downloading', version: '0.9.1', percent: 42 }
 const ready: UpdateBannerState = { mode: 'ready', version: '0.9.1' }
 const link: UpdateBannerState = { mode: 'link', version: '0.9.1', url: 'https://example.test' }
+const dismissed: UpdateBannerState = { mode: 'dismissed' }
 
 describe('nextBanner', () => {
   it('새 버전을 찾으면 승인을 기다리는 배너를 띄운다', () => {
@@ -66,6 +67,15 @@ describe('nextBanner', () => {
     expect(nextBanner(null, { type: 'error', message: 'ENOTFOUND' })).toBeNull()
   })
 
+  // 닫기는 "이번 실행에서는 그만" 이라는 뜻이다. 진행률이 계속 오면 배너가 되살아난다
+  it('사용자가 닫았으면 어떤 이벤트도 배너를 되살리지 않는다', () => {
+    expect(nextBanner(dismissed, { type: 'available', version: '0.9.2' })).toEqual(dismissed)
+    expect(nextBanner(dismissed, { type: 'downloading', version: '0.9.1', percent: 50 })).toEqual(
+      dismissed
+    )
+    expect(nextBanner(dismissed, { type: 'ready', version: '0.9.1' })).toEqual(dismissed)
+  })
+
   // legacy 링크 배너가 뜬 환경에는 이벤트 리스너 자체가 없다. 그래도 규약을 코드로 못박아 둔다
   it('링크 배너는 이벤트가 덮어쓰지 않는다', () => {
     expect(nextBanner(link, { type: 'available', version: '0.9.2' })).toEqual(link)
@@ -81,6 +91,11 @@ describe('isDownloadFailure', () => {
 
   it('아직 누르지 않은 배너가 그대로인 것은 실패가 아니다', () => {
     expect(isDownloadFailure(available, available)).toBe(false)
+  })
+
+  // 받던 중에 더 새 버전이 나오면 승인 배너로 바뀐다 — 실패가 아니라 갈아타기다
+  it('더 새 버전으로 갈아타는 것은 실패가 아니다', () => {
+    expect(isDownloadFailure(downloading, { mode: 'available', version: '0.9.2' })).toBe(false)
   })
 
   it('정상 진행은 실패가 아니다', () => {
