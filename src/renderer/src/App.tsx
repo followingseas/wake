@@ -21,7 +21,7 @@ import type {
 import { makeTranslate, resolveLanguage } from './i18n'
 import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
 import { buildGroups, type SubGroup } from './lib/groups'
-import { nextBanner, type UpdateBannerState } from './lib/updateBanner'
+import { isDownloadFailure, nextBanner, type UpdateBannerState } from './lib/updateBanner'
 import { shortcut } from './lib/platform'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
@@ -109,11 +109,14 @@ export default function App(): ReactElement {
     translateRef.current = t
   }, [t])
 
-  // 업데이트 이벤트 콜백이 직전 배너 상태를 봐야 한다. 시작 효과에 update 를 묶으면 안 되므로 ref 로 읽는다
+  // 이벤트 콜백이 직전 배너를 봐야 하는데, 실패 토스트 판단이 걸려 있어 setUpdate(prev=>…) 안에
+  // 넣을 수 없다(StrictMode 에서 updater 는 순수해야 한다). 시작 효과에 update 를 묶을 수도 없어
+  // ref 로 읽는다. 이펙트로 미러링하면 연달아 오는 이벤트가 낡은 값을 보므로 여기서 함께 쓴다
   const updateRef = useRef<UpdateBannerState | null>(null)
-  useEffect(() => {
-    updateRef.current = update
-  }, [update])
+  const applyUpdate = useCallback((next: UpdateBannerState | null) => {
+    updateRef.current = next
+    setUpdate(next)
+  }, [])
 
   const loadSessions = useCallback(
     async (projectId: string) => {
@@ -149,14 +152,13 @@ export default function App(): ReactElement {
   )
 
   useEffect(() => {
-    // electron-updater 이벤트(다운로드 진행·완료)가 배너 상태를 구동한다
+    // 새 버전 확인·진행·완료·실패가 전부 이 이벤트로 온다. 전이는 nextBanner 가 맡는다
     const unsubscribe = window.api.onUpdateEvent((event) => {
       const prev = updateRef.current
-      // 승인해서 받던 중에 끊긴 것은 사용자가 기다리던 일이라 조용히 넘기지 않는다
-      if (event.type === 'error' && prev?.mode === 'downloading') {
-        showToast(translateRef.current('update.failed'))
-      }
-      setUpdate(nextBanner(prev, event))
+      const next = nextBanner(prev, event)
+      // 승인하고 기다리던 다운로드가 끊긴 것은 조용히 넘기지 않는다
+      if (isDownloadFailure(prev, next)) showToast(translateRef.current('update.failed'))
+      applyUpdate(next)
     })
     // 첫 그룹 자동 펼침이 설정에 좌우되므로 설정을 먼저 받고 프로젝트를 읽는다
     window.api.getSettings().then((info) => {
@@ -165,7 +167,7 @@ export default function App(): ReactElement {
         window.api.checkForUpdate().then((updateInfo: UpdateInfo) => {
           // auto 모드는 이벤트가 배너를 그리므로 링크 배너는 legacy(dev) 경로에서만 띄운다
           if (updateInfo.hasUpdate && !updateInfo.auto && updateInfo.latestVersion) {
-            setUpdate({ mode: 'link', version: updateInfo.latestVersion, url: updateInfo.url })
+            applyUpdate({ mode: 'link', version: updateInfo.latestVersion, url: updateInfo.url })
           }
         })
       }
@@ -184,7 +186,7 @@ export default function App(): ReactElement {
         .catch((error) => console.error('[startup] 프로젝트 목록 조회 실패', error))
     })
     return unsubscribe
-  }, [loadSessions, showToast])
+  }, [applyUpdate, loadSessions, showToast])
 
   // 애플리케이션 메뉴(wake > 설정…)에서 설정 열기
   useEffect(() => window.api.onOpenSettings(() => setShowSettings(true)), [])
@@ -511,6 +513,7 @@ export default function App(): ReactElement {
             <span className="update-banner__text">
               {(update.mode === 'link' || update.mode === 'available') &&
                 t('update.banner', { v: `v${update.version}` })}
+              {update.mode === 'requested' && t('update.requested', { v: `v${update.version}` })}
               {update.mode === 'downloading' &&
                 t('update.downloading', { v: `v${update.version}`, p: update.percent })}
               {update.mode === 'ready' && t('update.ready', { v: `v${update.version}` })}
@@ -520,14 +523,25 @@ export default function App(): ReactElement {
                 className="btn btn--primary"
                 onClick={() => {
                   window.api.openExternal(update.url)
-                  setUpdate(null)
+                  applyUpdate(null)
                 }}
               >
                 {t('update.download')}
               </button>
             )}
             {update.mode === 'available' && (
-              <button className="btn btn--primary" onClick={() => window.api.downloadUpdate()}>
+              <button
+                className="btn btn--primary"
+                onClick={() => {
+                  // 첫 진행률은 빨라야 1초 뒤다. 그 전에 끊기면 화면이 전혀 안 바뀌므로 먼저 표시한다
+                  const version = update.version
+                  applyUpdate({ mode: 'requested', version })
+                  window.api.downloadUpdate().catch(() => {
+                    applyUpdate({ mode: 'available', version })
+                    showToast(t('update.failed'))
+                  })
+                }}
+              >
                 {t('update.download')}
               </button>
             )}
@@ -538,7 +552,7 @@ export default function App(): ReactElement {
             )}
             <button
               className="update-banner__close"
-              onClick={() => setUpdate(null)}
+              onClick={() => applyUpdate(null)}
               aria-label={t('common.close')}
             >
               ×

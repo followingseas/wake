@@ -21,7 +21,7 @@ export function isNewer(latest: string, current: string): boolean {
   return false
 }
 
-/** 서명된 패키지 앱에서만 동작한다. dev 모드는 legacy 확인(updater.ts)을 쓴다. */
+/** app.isPackaged 만 본다 — 서명이 없으면 설치 단계에서 error 이벤트로 드러난다. dev 는 legacy 확인(updater.ts) */
 export function isAutoUpdateSupported(): boolean {
   return app.isPackaged
 }
@@ -33,23 +33,28 @@ export function initAutoUpdate(window: BrowserWindow): void {
     if (!window.isDestroyed()) window.webContents.send('update:event', event)
   }
 
+  // autoUpdater 는 모듈 싱글턴이다. 창을 다시 열 때 리스너가 쌓이고 죽은 창의 클로저가 남는다
+  autoUpdater.removeAllListeners()
+
   // 다운로드는 사용자가 배너에서 승인해야 시작한다 (downloadUpdate)
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = true
   // autoUpdater.currentVersion 은 설치된 버전이라 진행률에 쓸 수 없다. 받고 있는 버전을 기억해 둔다
-  let pendingVersion = ''
+  let pendingVersion: string | null = null
   autoUpdater.on('update-available', (info) => {
     pendingVersion = info.version
     send({ type: 'available', version: info.version })
   })
   autoUpdater.on('download-progress', (progress) => {
+    // 어느 버전을 받는지 모르면 "새 버전 v 다운로드 중" 같은 빈 안내가 된다. 차라리 침묵한다
+    if (pendingVersion === null) return
     send({ type: 'downloading', version: pendingVersion, percent: Math.round(progress.percent) })
   })
   autoUpdater.on('update-downloaded', (info) => {
     send({ type: 'ready', version: info.version })
   })
   autoUpdater.on('error', (error) => {
-    // 오프라인 등은 조용히 넘어가되 렌더러가 상태를 정리할 수 있게 알린다
+    // 오류는 막지 않고 그대로 올린다. 사용자에게 보일지와 배너를 어떻게 되돌릴지는 렌더러가 정한다
     send({ type: 'error', message: error.message })
   })
 }
@@ -66,14 +71,24 @@ export async function checkViaAutoUpdater(): Promise<UpdateInfo> {
       url: RELEASES_PAGE,
       auto: true
     }
-  } catch {
+  } catch (error) {
+    // 확인 실패와 "최신입니다"가 구분되지 않는다. 최소한 흔적은 남긴다
+    console.error('[update] 업데이트 확인 실패', error)
     return { currentVersion, latestVersion: null, hasUpdate: false, url: RELEASES_PAGE, auto: true }
   }
 }
 
-/** 사용자가 배너에서 승인했을 때만 호출한다 */
-export function downloadUpdate(): void {
-  void autoUpdater.downloadUpdate()
+/**
+ * 사용자가 배너에서 승인했을 때만 호출한다. update-available 이 뜬 뒤라야 하고, 그 전이면
+ * electron-updater 가 거부한다. 실패는 'error' 이벤트로 렌더러에 전달된다
+ */
+export async function downloadUpdate(): Promise<void> {
+  try {
+    await autoUpdater.downloadUpdate()
+  } catch (error) {
+    // 취소는 'error' 이벤트를 내지 않으므로 여기서만 흔적이 남는다
+    console.error('[update] 다운로드 실패', error)
+  }
 }
 
 export function installUpdate(): void {
