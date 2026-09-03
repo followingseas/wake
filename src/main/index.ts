@@ -12,6 +12,7 @@ import { listTerminals } from './lib/terminals'
 import { checkForUpdate } from './lib/updater'
 import {
   checkViaAutoUpdater,
+  downloadUpdate,
   initAutoUpdate,
   installUpdate,
   isAutoUpdateSupported
@@ -46,6 +47,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle('update:check', (_event, force?: boolean) =>
     isAutoUpdateSupported() ? checkViaAutoUpdater() : checkForUpdate(force === true)
   )
+  ipcMain.handle('update:download', () => downloadUpdate())
   ipcMain.handle('update:install', () => installUpdate())
   // 세션 우클릭 컨텍스트 메뉴 — 선택 결과('reveal'|'delete')를, 그냥 닫히면 null을 돌려준다
   ipcMain.handle('session:menu', (event, labels: { reveal: string; delete: string }) => {

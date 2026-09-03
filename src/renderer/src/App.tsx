@@ -18,13 +18,10 @@ import type {
   UpdateInfo
 } from '../../shared/types'
 
-type UpdateBannerState =
-  | { mode: 'link'; version: string; url: string }
-  | { mode: 'downloading'; version: string; percent: number }
-  | { mode: 'ready'; version: string }
 import { makeTranslate, resolveLanguage } from './i18n'
 import { DEFAULT_SETTINGS, PrefsContext, type Prefs } from './prefs'
 import { buildGroups, type SubGroup } from './lib/groups'
+import { nextBanner, type UpdateBannerState } from './lib/updateBanner'
 import { shortcut } from './lib/platform'
 import { Sidebar } from './components/Sidebar'
 import { ConversationView } from './components/ConversationView'
@@ -112,6 +109,12 @@ export default function App(): ReactElement {
     translateRef.current = t
   }, [t])
 
+  // 업데이트 이벤트 콜백이 직전 배너 상태를 봐야 한다. 시작 효과에 update 를 묶으면 안 되므로 ref 로 읽는다
+  const updateRef = useRef<UpdateBannerState | null>(null)
+  useEffect(() => {
+    updateRef.current = update
+  }, [update])
+
   const loadSessions = useCallback(
     async (projectId: string) => {
       if (loadedProjects.current.has(projectId)) return
@@ -148,13 +151,12 @@ export default function App(): ReactElement {
   useEffect(() => {
     // electron-updater 이벤트(다운로드 진행·완료)가 배너 상태를 구동한다
     const unsubscribe = window.api.onUpdateEvent((event) => {
-      if (event.type === 'downloading') {
-        setUpdate({ mode: 'downloading', version: event.version, percent: event.percent })
-      } else if (event.type === 'ready') {
-        setUpdate({ mode: 'ready', version: event.version })
-      } else if (event.type === 'error') {
-        setUpdate((prev) => (prev?.mode === 'ready' ? prev : null))
+      const prev = updateRef.current
+      // 승인해서 받던 중에 끊긴 것은 사용자가 기다리던 일이라 조용히 넘기지 않는다
+      if (event.type === 'error' && prev?.mode === 'downloading') {
+        showToast(translateRef.current('update.failed'))
       }
+      setUpdate(nextBanner(prev, event))
     })
     // 첫 그룹 자동 펼침이 설정에 좌우되므로 설정을 먼저 받고 프로젝트를 읽는다
     window.api.getSettings().then((info) => {
@@ -182,7 +184,7 @@ export default function App(): ReactElement {
         .catch((error) => console.error('[startup] 프로젝트 목록 조회 실패', error))
     })
     return unsubscribe
-  }, [loadSessions])
+  }, [loadSessions, showToast])
 
   // 애플리케이션 메뉴(wake > 설정…)에서 설정 열기
   useEffect(() => window.api.onOpenSettings(() => setShowSettings(true)), [])
@@ -507,7 +509,8 @@ export default function App(): ReactElement {
         {update && (
           <div className="update-banner" role="status">
             <span className="update-banner__text">
-              {update.mode === 'link' && t('update.banner', { v: `v${update.version}` })}
+              {(update.mode === 'link' || update.mode === 'available') &&
+                t('update.banner', { v: `v${update.version}` })}
               {update.mode === 'downloading' &&
                 t('update.downloading', { v: `v${update.version}`, p: update.percent })}
               {update.mode === 'ready' && t('update.ready', { v: `v${update.version}` })}
@@ -520,6 +523,11 @@ export default function App(): ReactElement {
                   setUpdate(null)
                 }}
               >
+                {t('update.download')}
+              </button>
+            )}
+            {update.mode === 'available' && (
+              <button className="btn btn--primary" onClick={() => window.api.downloadUpdate()}>
                 {t('update.download')}
               </button>
             )}

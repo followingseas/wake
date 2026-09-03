@@ -33,11 +33,17 @@ export function initAutoUpdate(window: BrowserWindow): void {
     if (!window.isDestroyed()) window.webContents.send('update:event', event)
   }
 
-  autoUpdater.autoDownload = true
+  // 다운로드는 사용자가 배너에서 승인해야 시작한다 (downloadUpdate)
+  autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = true
+  // autoUpdater.currentVersion 은 설치된 버전이라 진행률에 쓸 수 없다. 받고 있는 버전을 기억해 둔다
+  let pendingVersion = ''
+  autoUpdater.on('update-available', (info) => {
+    pendingVersion = info.version
+    send({ type: 'available', version: info.version })
+  })
   autoUpdater.on('download-progress', (progress) => {
-    const version = autoUpdater.currentVersion?.version ?? ''
-    send({ type: 'downloading', version, percent: Math.round(progress.percent) })
+    send({ type: 'downloading', version: pendingVersion, percent: Math.round(progress.percent) })
   })
   autoUpdater.on('update-downloaded', (info) => {
     send({ type: 'ready', version: info.version })
@@ -63,6 +69,11 @@ export async function checkViaAutoUpdater(): Promise<UpdateInfo> {
   } catch {
     return { currentVersion, latestVersion: null, hasUpdate: false, url: RELEASES_PAGE, auto: true }
   }
+}
+
+/** 사용자가 배너에서 승인했을 때만 호출한다 */
+export function downloadUpdate(): void {
+  void autoUpdater.downloadUpdate()
 }
 
 export function installUpdate(): void {

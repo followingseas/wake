@@ -163,6 +163,8 @@ export interface UpdateInfo {
 }
 
 export type UpdateEvent =
+  /** 새 버전을 찾았다. 다운로드는 사용자가 승인해야 시작한다 */
+  | { type: 'available'; version: string }
   | { type: 'downloading'; version: string; percent: number }
   | { type: 'ready'; version: string }
   | { type: 'error'; message: string }
@@ -238,5 +240,6 @@ export interface ClaudeHistoryApi {
     reveal: string
     delete: string
   }) => Promise<'reveal' | 'delete' | null>
+  downloadUpdate: () => Promise<void>
   installUpdate: () => Promise<void>
 }
