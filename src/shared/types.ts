@@ -158,7 +158,7 @@ export interface UpdateInfo {
   latestVersion: string | null
   hasUpdate: boolean
   url: string
-  /** true면 electron-updater가 다운로드·설치를 관리한다 (배너는 update:event로 구동) */
+  /** true면 앱 안에서 받아 설치한다(다운로드 시작은 사용자 승인). false면 릴리스 페이지로 안내한다 */
   auto: boolean
 }
 
@@ -240,6 +240,7 @@ export interface ClaudeHistoryApi {
     reveal: string
     delete: string
   }) => Promise<'reveal' | 'delete' | null>
+  /** 승인만 전달한다 — 완료가 아니라 시작이다. 진행·완료·실패는 update:event 로 온다 */
   downloadUpdate: () => Promise<void>
   installUpdate: () => Promise<void>
 }
