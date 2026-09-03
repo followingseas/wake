@@ -9,6 +9,8 @@ export type UpdateBannerState =
   | { mode: 'requested'; version: string }
   | { mode: 'downloading'; version: string; percent: number }
   | { mode: 'ready'; version: string }
+  /** 사용자가 닫았다 — 이번 실행에서는 다시 띄우지 않는다 */
+  | { mode: 'dismissed' }
 
 /** 사용자가 승인해서 진행 중인 상태 — 실패하면 알려야 한다 */
 function isInFlight(state: UpdateBannerState | null): state is UpdateBannerState & {
@@ -22,6 +24,8 @@ export function nextBanner(
   prev: UpdateBannerState | null,
   event: UpdateEvent
 ): UpdateBannerState | null {
+  // 닫기는 "이번 실행에서는 그만" 이라는 뜻이다. 진행률이 계속 오므로 지키지 않으면 되살아난다
+  if (prev?.mode === 'dismissed') return prev
   // 링크 배너가 뜬 환경에는 이벤트 리스너가 없다. 두 채널은 공존하지 않는다
   if (prev?.mode === 'link') return prev
 
@@ -44,12 +48,13 @@ export function nextBanner(
 }
 
 /**
- * 전이 결과로 실패를 판정한다. 승인한 다운로드가 승인 단계로 되돌아갔다는 것은 끊겼다는 뜻이다.
+ * 전이 결과로 실패를 판정한다. 승인한 다운로드가 같은 버전의 승인 단계로 되돌아갔다는 것은
+ * 끊겼다는 뜻이다. 버전이 달라졌다면 더 새 버전으로 갈아타는 것이지 실패가 아니다.
  * 조건을 nextBanner 와 따로 두면 규칙이 바뀔 때 조용히 어긋난다
  */
 export function isDownloadFailure(
   prev: UpdateBannerState | null,
   next: UpdateBannerState | null
 ): boolean {
-  return isInFlight(prev) && next?.mode === 'available'
+  return isInFlight(prev) && next?.mode === 'available' && next.version === prev.version
 }

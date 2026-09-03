@@ -131,9 +131,11 @@ describe('downloadUpdate', () => {
     expect(updater.downloadUpdate).toHaveBeenCalledOnce()
   })
 
-  it('실패해도 미처리 거부를 남기지 않는다', async () => {
-    updater.downloadUpdate.mockImplementation(() => Promise.reject(new Error('ETIMEDOUT')))
+  // 취소는 electron-updater 가 'error' 이벤트를 내지 않는다. 여기서 삼키면 배너가 승인 상태에
+  // 갇혀 다시 누를 수도 없다
+  it('실패를 삼키지 않고 호출자에게 올린다', async () => {
+    updater.downloadUpdate.mockImplementation(() => Promise.reject(new Error('cancelled')))
 
-    await expect(downloadUpdate()).resolves.toBeUndefined()
+    await expect(downloadUpdate()).rejects.toThrow('cancelled')
   })
 })

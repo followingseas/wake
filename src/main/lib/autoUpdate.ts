@@ -86,8 +86,9 @@ export async function downloadUpdate(): Promise<void> {
   try {
     await autoUpdater.downloadUpdate()
   } catch (error) {
-    // 취소는 'error' 이벤트를 내지 않으므로 여기서만 흔적이 남는다
+    // 취소는 'error' 이벤트를 내지 않는다. 삼키면 배너가 승인 상태에 갇히므로 렌더러까지 올린다
     console.error('[update] 다운로드 실패', error)
+    throw error
   }
 }
 
