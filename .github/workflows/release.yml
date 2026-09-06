@@ -62,9 +62,10 @@ jobs:
           done < <(security list-keychains -d user)
           security list-keychains -d user -s "$KEYCHAIN" ${EXISTING[@]+"${EXISTING[@]}"}
 
-          # 인증서가 없으면 grep 이 실패한다. set -e 에 걸려 죽지 않게 받아서 직접 검사한다
+          # electron-builder 는 "Developer ID Application:" 접두사를 뺀 이름만 받는다.
+          # 매치된 줄만 출력해, 형식이 다르면 빈 값이 되어 아래 검사에 걸리게 한다
           IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
-            | grep 'Developer ID Application' | head -1 | sed -E 's/.*"(.+)"$/\1/' || true)
+            | sed -n -E 's/.*"Developer ID Application: (.+)"$/\1/p' | head -1)
           if [ -z "$IDENTITY" ]; then
             echo "::error::키체인에서 Developer ID Application 인증서를 찾지 못했다"
             exit 1
