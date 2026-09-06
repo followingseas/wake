@@ -53,9 +53,14 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple:,codesign: \
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
 
-          # codesign 이 찾을 수 있게 검색 목록에 넣는다. 기존 목록은 유지한다
-          security list-keychains -d user -s "$KEYCHAIN" \
-            $(security list-keychains -d user | sed 's/[" ]//g')
+          # codesign 이 찾을 수 있게 검색 목록에 넣는다. 기존 목록은 유지한다.
+          # 출력은 따옴표로 감싼 들여쓴 경로라, 공백이 든 경로도 깨지지 않게 줄 단위로 읽는다
+          EXISTING=()
+          while IFS= read -r line; do
+            line=$(printf '%s' "$line" | sed -E 's/^[[:space:]]*"?//; s/"?[[:space:]]*$//')
+            if [ -n "$line" ]; then EXISTING+=("$line"); fi
+          done < <(security list-keychains -d user)
+          security list-keychains -d user -s "$KEYCHAIN" ${EXISTING[@]+"${EXISTING[@]}"}
 
           # 인증서가 없으면 grep 이 실패한다. set -e 에 걸려 죽지 않게 받아서 직접 검사한다
           IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
