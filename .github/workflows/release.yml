@@ -28,16 +28,57 @@ jobs:
           APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
         run: printf '%s' "$APPLE_API_KEY_CONTENT" > "$RUNNER_TEMP/AuthKey.p8"
 
+      - name: 서명용 키체인 준비
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # electron-builder 가 스스로 만드는 키체인은 set-key-partition-list 에 키체인 비밀번호가
+          # 아닌 값을 넘긴다(upstream #10101). 예전 macOS 는 그냥 넘어갔지만 2026-08-28 자 runner
+          # 이미지부터 거부한다. 키체인을 직접 만들어 그 경로를 타지 않게 한다
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+
+          printf '%s' "$CSC_LINK" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CSC_KEY_PASSWORD" \
+            -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+          # 여기서 넘기는 것이 키체인 자신의 비밀번호여야 한다
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+
+          # codesign 이 찾을 수 있게 검색 목록에 넣는다. 기존 목록은 유지한다
+          security list-keychains -d user -s "$KEYCHAIN" \
+            $(security list-keychains -d user | sed 's/[" ]//g')
+
+          # 인증서가 없으면 grep 이 실패한다. set -e 에 걸려 죽지 않게 받아서 직접 검사한다
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | grep 'Developer ID Application' | head -1 | sed -E 's/.*"(.+)"$/\1/' || true)
+          if [ -z "$IDENTITY" ]; then
+            echo "::error::키체인에서 Developer ID Application 인증서를 찾지 못했다"
+            exit 1
+          fi
+
+          # CSC_LINK 를 그대로 두면 electron-builder 가 다시 자기 키체인을 만든다. 여기서 끊는다
+          echo "CSC_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+          echo "CSC_NAME=$IDENTITY" >> "$GITHUB_ENV"
+
       - name: 빌드·서명·공증 후 draft 릴리스 업로드
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_API_KEY: ${{ runner.temp }}/AuthKey.p8
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: npm run build:mac -- --publish always
 
-      - name: 공증용 API 키 정리
+      - name: 자격증명 정리
         if: always()
-        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
+        run: |
+          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/cert.p12"
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true
