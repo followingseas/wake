@@ -1,9 +1,12 @@
 import { BrowserWindow, Menu, type MenuItemConstructorOptions, type WebContents } from 'electron'
 import type { MenuAnchor } from '../../shared/types'
 
-/** checked 를 주면 라디오 항목이 된다 — 여러 값 중 지금 값을 표시할 때 쓴다 */
+/**
+ * checked 를 주면 라디오 항목이 된다 — 여러 값 중 지금 값을 표시할 때 쓴다.
+ * enabled 를 false 로 주면 보이되 고를 수 없는 항목이 된다
+ */
 export type ChoiceItem<T extends string> =
-  { value: T; label: string; checked?: boolean } | { type: 'separator' }
+  { value: T; label: string; checked?: boolean; enabled?: boolean } | { type: 'separator' }
 
 /**
  * 네이티브 팝업 메뉴를 띄우고 고른 항목의 값을, 그냥 닫히면 null 을 돌려준다.
@@ -28,7 +31,11 @@ export function popupChoice<T extends string>(
     }
     const template = items.map((item): MenuItemConstructorOptions => {
       if ('type' in item) return { type: 'separator' }
-      const base = { label: item.label, click: () => done(item.value) }
+      const base: MenuItemConstructorOptions = {
+        label: item.label,
+        click: () => done(item.value),
+        ...(item.enabled !== undefined && { enabled: item.enabled })
+      }
       return item.checked === undefined ? base : { ...base, type: 'radio', checked: item.checked }
     })
     const window = BrowserWindow.fromWebContents(sender) ?? undefined

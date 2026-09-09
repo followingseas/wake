@@ -117,6 +117,16 @@ describe('popupChoice', () => {
     expect(shown.template.map((item) => item.type === 'radio')).toEqual([false, false, false])
   })
 
+  it('enabled 를 false 로 준 항목은 비활성으로 두고, 주지 않은 항목은 그대로 둔다', () => {
+    void popupChoice(sender, [
+      { value: 'reveal', label: 'Reveal' },
+      { value: 'delete', label: 'Delete', enabled: false }
+    ])
+
+    expect(shown.template[0]).not.toHaveProperty('enabled')
+    expect(shown.template[1]).toMatchObject({ label: 'Delete', enabled: false })
+  })
+
   it('sender 가 속한 창을 팝업 대상으로 넘긴다', () => {
     void popupChoice(sender, [{ value: 'reveal', label: 'Reveal' }])
 
