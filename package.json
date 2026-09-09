@@ -1,7 +1,7 @@
 {
   "name": "wake",
   "version": "0.11.1",
-  "description": "Wake — trace the wake of your Claude Code sessions. A local conversation history viewer.",
+  "description": "Wake — trace the wake of your Claude Code and Codex sessions. A local conversation history viewer.",
   "main": "./out/main/index.js",
   "author": "followingseas",
   "homepage": "https://github.com/followingseas/wake",

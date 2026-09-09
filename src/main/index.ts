@@ -3,8 +3,7 @@ import { join } from 'path'
 import { writeFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { listProjects, listSessions } from './lib/scanner'
-import { parseConversation } from './lib/parser'
+import { listProjects, listSessions, loadConversation } from './lib/sessions'
 import { initSearchIndex, searchSessions } from './lib/searchIndex'
 import { deleteSession, forkSession, resumeSession, revealSession } from './lib/actions'
 import { loadSettings, saveSettings } from './lib/settings'
@@ -19,7 +18,13 @@ import {
 } from './lib/autoUpdate'
 import { popupChoice } from './lib/choiceMenu'
 import { sortMenuItems } from './lib/sortMenu'
-import type { AppSettings, MenuAnchor, SettingsInfo, SidebarSort } from '../shared/types'
+import type {
+  AppSettings,
+  MenuAnchor,
+  SessionProvider,
+  SettingsInfo,
+  SidebarSort
+} from '../shared/types'
 
 function settingsInfo(): SettingsInfo {
   return { settings: loadSettings(), terminals: listTerminals() }
@@ -28,18 +33,22 @@ function settingsInfo(): SettingsInfo {
 function registerIpcHandlers(): void {
   ipcMain.handle('projects:list', () => listProjects())
   ipcMain.handle('sessions:list', (_event, projectId: string) => listSessions(projectId))
-  ipcMain.handle('conversation:load', (_event, filePath: string) => parseConversation(filePath))
+  ipcMain.handle('conversation:load', (_event, filePath: string) => loadConversation(filePath))
   ipcMain.handle('search:query', (_event, query: string) => {
     // 프리로드가 문자열만 넘기므로 여기 오면 버그다. 빈 질의로 눌러 "결과 없음"으로
     // 위장하지 않고 렌더러까지 실패를 올려보낸다
     if (typeof query !== 'string') throw new TypeError('search:query expects a string')
     return searchSessions(query)
   })
-  ipcMain.handle('session:resume', (_event, sessionId: string, cwd: string | null) =>
-    resumeSession(sessionId, cwd)
+  ipcMain.handle(
+    'session:resume',
+    (_event, sessionId: string, cwd: string | null, provider: SessionProvider) =>
+      resumeSession(sessionId, cwd, provider)
   )
-  ipcMain.handle('session:fork', (_event, sessionId: string, cwd: string | null) =>
-    forkSession(sessionId, cwd)
+  ipcMain.handle(
+    'session:fork',
+    (_event, sessionId: string, cwd: string | null, provider: SessionProvider) =>
+      forkSession(sessionId, cwd, provider)
   )
   ipcMain.handle('session:delete', (_event, filePath: string) => deleteSession(filePath))
   ipcMain.handle('session:reveal', (_event, filePath: string) => revealSession(filePath))
@@ -52,12 +61,18 @@ function registerIpcHandlers(): void {
   ipcMain.handle('update:download', () => downloadUpdate())
   ipcMain.handle('update:install', () => installUpdate())
   // 세션 우클릭 컨텍스트 메뉴 — 선택 결과('reveal'|'delete')를, 그냥 닫히면 null을 돌려준다
-  ipcMain.handle('session:menu', (event, labels: { reveal: string; delete: string }) =>
-    popupChoice<'reveal' | 'delete'>(event.sender, [
-      { value: 'reveal', label: String(labels?.reveal ?? 'Reveal in Finder') },
-      { type: 'separator' },
-      { value: 'delete', label: String(labels?.delete ?? 'Delete…') }
-    ])
+  ipcMain.handle(
+    'session:menu',
+    (event, labels: { reveal: string; delete: string; canDelete: boolean }) =>
+      popupChoice<'reveal' | 'delete'>(event.sender, [
+        { value: 'reveal', label: String(labels?.reveal ?? 'Reveal in Finder') },
+        { type: 'separator' },
+        {
+          value: 'delete',
+          label: String(labels?.delete ?? 'Delete…'),
+          enabled: labels?.canDelete === true
+        }
+      ])
   )
   // 사이드바 정렬 메뉴 — 지금 기준에 체크가 붙고, 고른 기준을, 그냥 닫히면 null을 돌려준다.
   // 버튼은 키보드로도 누르므로 커서 위치가 아니라 렌더러가 알려준 버튼 자리에 띄운다
