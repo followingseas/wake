@@ -134,13 +134,22 @@ export function Sidebar({
   onSessionMenu,
   onResizeStart
 }: Props): ReactElement {
-  const { t, settings } = usePrefs()
+  const { t, settings, updateSettings } = usePrefs()
   const searching = query.trim().length > 0
   const trimmedQuery = searching ? query.trim() : ''
   const groups = useMemo(
-    () => buildGroups(projects, settings.showAgentSessions),
-    [projects, settings.showAgentSessions]
+    () => buildGroups(projects, settings.showAgentSessions, settings.sidebarSort),
+    [projects, settings.showAgentSessions, settings.sidebarSort]
   )
+  const sortLabel = t('sidebar.sort', { by: t(`sidebar.sort.${settings.sidebarSort}`) })
+
+  const openSortMenu = async (): Promise<void> => {
+    const choice = await window.api.showSortMenu(
+      { recent: t('sidebar.sort.recent'), name: t('sidebar.sort.name') },
+      settings.sidebarSort
+    )
+    if (choice && choice !== settings.sidebarSort) await updateSettings({ sidebarSort: choice })
+  }
 
   return (
     <aside className="sidebar">
@@ -153,6 +162,23 @@ export function Sidebar({
           onChange={(event) => onQueryChange(event.target.value)}
           spellCheck={false}
         />
+        <button
+          className="sidebar__sort"
+          onClick={openSortMenu}
+          title={sortLabel}
+          aria-label={sortLabel}
+          aria-haspopup="menu"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path
+              d="M2.5 4h11M4.5 8h7M6.5 12h3"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
       </div>
       <nav className="sidebar__list">
         {groups.map((group) => {

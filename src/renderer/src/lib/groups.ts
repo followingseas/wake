@@ -1,4 +1,4 @@
-import type { ProjectInfo, RepoSub } from '../../../shared/types'
+import type { ProjectInfo, RepoSub, SidebarSort } from '../../../shared/types'
 
 export interface SubGroup {
   /** 펼침 상태 키. 그룹 id 뒤에 종류·이름을 붙여 다른 그룹의 같은 이름과 겹치지 않는다 */
@@ -46,7 +46,23 @@ interface Tally {
 const byActivity = (a: { lastActiveAt: number }, b: { lastActiveAt: number }): number =>
   b.lastActiveAt - a.lastActiveAt
 
-export function buildGroups(projects: ProjectInfo[], showAgentSessions: boolean): ProjectGroup[] {
+// 대소문자를 가리지 않고, 이름 속 숫자는 크기대로 비교한다(repo2 < repo10)
+const nameCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
+// 경로가 달라도 이름은 같을 수 있다. 그때 순서가 입력 순서에 휘둘리지 않게 최근 순으로 가른다
+const byName = (
+  a: { name: string; lastActiveAt: number },
+  b: { name: string; lastActiveAt: number }
+): number => nameCollator.compare(a.name, b.name) || byActivity(a, b)
+
+export function buildGroups(
+  projects: ProjectInfo[],
+  showAgentSessions: boolean,
+  sort: SidebarSort = 'recent'
+): ProjectGroup[] {
+  // 화면에 항목으로 보이는 그룹과 하위 항목만 기준을 따른다
+  const byOrder = sort === 'name' ? byName : byActivity
+
   // 표시할 세션 수는 토글에 따라 달라진다. 카운트 배지와 "빈 그룹 숨김" 판정이 같은 값을 써야
   // 숫자와 실제 목록이 어긋나지 않는다.
   const visibleCount = (project: ProjectInfo): number =>
@@ -123,10 +139,11 @@ export function buildGroups(projects: ProjectInfo[], showAgentSessions: boolean)
   // 보여줄 세션이 하나도 없는 그룹은 내보내지 않는다. 상태에서 지우지 않고 여기서 거르므로
   // 토글을 다시 켜면 그대로 돌아온다.
   const list = [...groups.values()].filter((group) => group.totalSessions > 0)
+  // roots 와 slot.projects 는 세션을 합치는 재료일 뿐 항목으로 보이지 않으므로 늘 최근 순이다
   for (const group of list) {
     group.roots.sort(byActivity)
-    group.subs.sort(byActivity)
+    group.subs.sort(byOrder)
     for (const slot of group.subs) slot.projects.sort(byActivity)
   }
-  return list.sort(byActivity)
+  return list.sort(byOrder)
 }

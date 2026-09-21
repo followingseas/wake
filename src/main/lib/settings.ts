@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   expandThinking: false,
   showMeta: true,
   showAgentSessions: false,
+  sidebarSort: 'recent',
   checkUpdatesOnLaunch: true
 }
 
@@ -41,6 +42,7 @@ export function loadSettings(): AppSettings {
         typeof raw.showAgentSessions === 'boolean'
           ? raw.showAgentSessions
           : DEFAULT_SETTINGS.showAgentSessions,
+      sidebarSort: pick(raw.sidebarSort, ['recent', 'name'] as const, DEFAULT_SETTINGS.sidebarSort),
       checkUpdatesOnLaunch:
         typeof raw.checkUpdatesOnLaunch === 'boolean'
           ? raw.checkUpdatesOnLaunch

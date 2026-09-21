@@ -176,11 +176,15 @@ button {
 }
 
 .sidebar__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 12px 10px;
 }
 
 .sidebar__search input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-ui);
   font-size: 12.5px;
   color: var(--text);
@@ -197,6 +201,22 @@ button {
 .sidebar__search input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.sidebar__sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--text-3);
+  padding: 6px;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.sidebar__sort:hover {
+  color: var(--text);
+  background: var(--surface);
 }
 
 .sidebar__list {

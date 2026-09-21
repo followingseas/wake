@@ -176,7 +176,11 @@ export default function App(): ReactElement {
         .then((list) => {
           setProjects(list)
           // 최상위는 그룹 단위이므로 첫 그룹을 펼치고 그 루트 프로젝트들의 세션을 읽는다
-          const first = buildGroups(list, info.settings.showAgentSessions)[0]
+          const first = buildGroups(
+            list,
+            info.settings.showAgentSessions,
+            info.settings.sidebarSort
+          )[0]
           if (first) {
             setExpanded(new Set([first.id]))
             first.roots.forEach((root) => loadSessions(root.id))
@@ -327,8 +331,8 @@ export default function App(): ReactElement {
   )
 
   const groups = useMemo(
-    () => buildGroups(projects, settings.showAgentSessions),
-    [projects, settings.showAgentSessions]
+    () => buildGroups(projects, settings.showAgentSessions, settings.sidebarSort),
+    [projects, settings.showAgentSessions, settings.sidebarSort]
   )
 
   const projectLabel = useCallback(
