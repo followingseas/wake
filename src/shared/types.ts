@@ -1,3 +1,5 @@
+import type { SidebarSort } from './sidebarSort'
+
 /** 세션을 만든 주체. 'agent'는 도구가 SDK로 띄운 헤드리스 세션이다. */
 export type SessionOrigin = 'user' | 'agent'
 
@@ -135,8 +137,13 @@ export interface TerminalOption {
   label: string
 }
 
-/** 사이드바 그룹과 그 하위 항목의 정렬 기준. 세션 목록은 기준과 무관하게 늘 최근 순이다 */
-export type SidebarSort = 'recent' | 'name'
+export type { SidebarSort }
+
+/** 팝업 메뉴를 띄울 자리. 창 왼쪽 위를 원점으로 하는 CSS 픽셀 좌표다 */
+export interface MenuAnchor {
+  x: number
+  y: number
+}
 
 export interface AppSettings {
   /** 'auto'면 OS 기본 터미널을 사용한다 */
@@ -244,10 +251,11 @@ export interface ClaudeHistoryApi {
     reveal: string
     delete: string
   }) => Promise<'reveal' | 'delete' | null>
-  /** 지금 기준에 체크가 붙은 메뉴를 띄운다. 고르지 않고 닫으면 null */
+  /** 지금 기준에 체크가 붙은 메뉴를 at 자리에 띄운다. 고르지 않고 닫으면 null */
   showSortMenu: (
     labels: Record<SidebarSort, string>,
-    current: SidebarSort
+    current: SidebarSort,
+    at: MenuAnchor
   ) => Promise<SidebarSort | null>
   /** 승인만 전달한다 — 완료가 아니라 시작이다. 진행·완료·실패는 update:event 로 온다 */
   downloadUpdate: () => Promise<void>

@@ -7,7 +7,14 @@ import { loadSettings, saveSettings } from './settings'
 // vi.mock 은 import 위로 끌어올려지므로 팩토리가 볼 값도 같이 끌어올려야 한다
 const userData = vi.hoisted(() => ({ path: '' }))
 
-vi.mock('electron', () => ({ app: { getPath: () => userData.path } }))
+vi.mock('electron', () => ({
+  app: {
+    getPath: (name: string) => {
+      if (name !== 'userData') throw new Error(`예상 밖의 경로 요청: ${name}`)
+      return userData.path
+    }
+  }
+}))
 
 function writeRaw(raw: unknown): void {
   writeFileSync(join(userData.path, 'settings.json'), JSON.stringify(raw))

@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { dirname, join } from 'path'
 import { app } from 'electron'
+import { SIDEBAR_SORTS } from '../../shared/sidebarSort'
 import type { AppSettings } from '../../shared/types'
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -42,7 +43,7 @@ export function loadSettings(): AppSettings {
         typeof raw.showAgentSessions === 'boolean'
           ? raw.showAgentSessions
           : DEFAULT_SETTINGS.showAgentSessions,
-      sidebarSort: pick(raw.sidebarSort, ['recent', 'name'] as const, DEFAULT_SETTINGS.sidebarSort),
+      sidebarSort: pick(raw.sidebarSort, SIDEBAR_SORTS, DEFAULT_SETTINGS.sidebarSort),
       checkUpdatesOnLaunch:
         typeof raw.checkUpdatesOnLaunch === 'boolean'
           ? raw.checkUpdatesOnLaunch

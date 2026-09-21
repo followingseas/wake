@@ -18,7 +18,8 @@ import {
   isAutoUpdateSupported
 } from './lib/autoUpdate'
 import { popupChoice } from './lib/choiceMenu'
-import type { AppSettings, SettingsInfo, SidebarSort } from '../shared/types'
+import { sortMenuItems } from './lib/sortMenu'
+import type { AppSettings, MenuAnchor, SettingsInfo, SidebarSort } from '../shared/types'
 
 function settingsInfo(): SettingsInfo {
   return { settings: loadSettings(), terminals: listTerminals() }
@@ -58,18 +59,10 @@ function registerIpcHandlers(): void {
       { value: 'delete', label: String(labels?.delete ?? 'Delete…') }
     ])
   )
-  // 사이드바 정렬 메뉴 — 지금 기준에 체크가 붙고, 고른 기준을, 그냥 닫히면 null을 돌려준다
-  ipcMain.handle(
-    'sidebar:sortMenu',
-    (event, labels: Record<SidebarSort, string>, current: SidebarSort) =>
-      popupChoice<SidebarSort>(event.sender, [
-        {
-          value: 'recent',
-          label: String(labels?.recent ?? 'Recent activity'),
-          checked: current !== 'name'
-        },
-        { value: 'name', label: String(labels?.name ?? 'Name'), checked: current === 'name' }
-      ])
+  // 사이드바 정렬 메뉴 — 지금 기준에 체크가 붙고, 고른 기준을, 그냥 닫히면 null을 돌려준다.
+  // 버튼은 키보드로도 누르므로 커서 위치가 아니라 렌더러가 알려준 버튼 자리에 띄운다
+  ipcMain.handle('sidebar:sortMenu', (event, labels: unknown, current: unknown, at?: MenuAnchor) =>
+    popupChoice<SidebarSort>(event.sender, sortMenuItems(labels, current), at)
   )
   ipcMain.handle('settings:get', () => settingsInfo())
   ipcMain.handle('settings:save', (_event, settings: Partial<AppSettings>) => {
