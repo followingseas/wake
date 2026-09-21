@@ -378,4 +378,97 @@ describe('buildGroups', () => {
     expect(groups[0].subs.map((s) => s.name)).toEqual(['b', 'a'])
     expect(groups[0].lastActiveAt).toBe(7)
   })
+
+  it('이름순이면 그룹을 활동 시각과 무관하게 이름으로 정렬한다', () => {
+    const groups = buildGroups(
+      [
+        project({ id: 'beta', sessionCount: 1, userSessionCount: 1, lastActiveAt: 9 }),
+        project({ id: 'alpha', sessionCount: 1, userSessionCount: 1, lastActiveAt: 1 })
+      ],
+      false,
+      'name'
+    )
+
+    expect(groups.map((g) => g.name)).toEqual(['alpha', 'beta'])
+  })
+
+  it('이름순이면 하위 항목도 이름으로 정렬한다', () => {
+    const groups = buildGroups(
+      [
+        project({ id: 'root', realPath: '/repo/root', sessionCount: 1, userSessionCount: 1 }),
+        project({
+          id: 'wt-b',
+          sessionCount: 1,
+          userSessionCount: 1,
+          lastActiveAt: 7,
+          repo: worktree('/repo/root', 'b')
+        }),
+        project({
+          id: 'wt-a',
+          sessionCount: 1,
+          userSessionCount: 1,
+          lastActiveAt: 3,
+          repo: worktree('/repo/root', 'a')
+        })
+      ],
+      false,
+      'name'
+    )
+
+    expect(groups[0].subs.map((s) => s.name)).toEqual(['a', 'b'])
+  })
+
+  it('이름순은 대소문자를 가리지 않는다', () => {
+    const groups = buildGroups(
+      [
+        project({ id: 'Zeta', sessionCount: 1, userSessionCount: 1 }),
+        project({ id: 'alpha', sessionCount: 1, userSessionCount: 1 }),
+        project({ id: 'Beta', sessionCount: 1, userSessionCount: 1 })
+      ],
+      false,
+      'name'
+    )
+
+    expect(groups.map((g) => g.name)).toEqual(['alpha', 'Beta', 'Zeta'])
+  })
+
+  it('이름순은 이름 속 숫자를 크기대로 비교한다', () => {
+    const groups = buildGroups(
+      [
+        project({ id: 'repo10', sessionCount: 1, userSessionCount: 1 }),
+        project({ id: 'repo2', sessionCount: 1, userSessionCount: 1 })
+      ],
+      false,
+      'name'
+    )
+
+    expect(groups.map((g) => g.name)).toEqual(['repo2', 'repo10'])
+  })
+
+  it('이름순에서 이름이 같으면 최근 활동 순으로 가른다', () => {
+    const groups = buildGroups(
+      [
+        project({
+          id: 'old',
+          name: 'app',
+          realPath: '/x/app',
+          sessionCount: 1,
+          userSessionCount: 1,
+          lastActiveAt: 1
+        }),
+        project({
+          id: 'new',
+          name: 'app',
+          realPath: '/y/app',
+          sessionCount: 1,
+          userSessionCount: 1,
+          lastActiveAt: 9
+        })
+      ],
+      false,
+      'name'
+    )
+
+    expect(groups.map((g) => g.id)).toEqual(['repo:/y/app', 'repo:/x/app'])
+  })
 })

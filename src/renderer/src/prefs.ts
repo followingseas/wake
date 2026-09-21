@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   expandThinking: false,
   showMeta: true,
   showAgentSessions: false,
+  sidebarSort: 'recent',
   checkUpdatesOnLaunch: true
 }
 
