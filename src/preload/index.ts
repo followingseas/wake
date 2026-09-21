@@ -32,7 +32,8 @@ const api: ClaudeHistoryApi = {
     return () => ipcRenderer.removeListener('search:progress', listener)
   },
   showSessionMenu: (labels) => ipcRenderer.invoke('session:menu', labels),
-  showSortMenu: (labels, current) => ipcRenderer.invoke('sidebar:sortMenu', labels, current),
+  showSortMenu: (labels, current, at) =>
+    ipcRenderer.invoke('sidebar:sortMenu', labels, current, at),
   downloadUpdate: () => ipcRenderer.invoke('update:download'),
   installUpdate: () => ipcRenderer.invoke('update:install')
 }

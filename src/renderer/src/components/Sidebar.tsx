@@ -4,7 +4,7 @@ import {
   type ReactElement,
   type RefObject
 } from 'react'
-import type { ProjectInfo, SessionMeta } from '../../../shared/types'
+import type { MenuAnchor, ProjectInfo, SessionMeta } from '../../../shared/types'
 import { formatRelativeTime, shortenPath } from '../lib/format'
 import { buildGroups } from '../lib/groups'
 import { shortcut } from '../lib/platform'
@@ -22,6 +22,8 @@ interface Props {
   onToggle: (key: string, projectIds: string[]) => void
   onSelectSession: (session: SessionMeta) => void
   onSessionMenu: (session: SessionMeta) => void
+  /** 정렬 메뉴를 띄울 자리를 넘긴다 */
+  onSortMenu: (at: MenuAnchor) => void
   onResizeStart: (event: ReactMouseEvent) => void
 }
 
@@ -132,9 +134,10 @@ export function Sidebar({
   onToggle,
   onSelectSession,
   onSessionMenu,
+  onSortMenu,
   onResizeStart
 }: Props): ReactElement {
-  const { t, settings, updateSettings } = usePrefs()
+  const { t, settings } = usePrefs()
   const searching = query.trim().length > 0
   const trimmedQuery = searching ? query.trim() : ''
   const groups = useMemo(
@@ -142,14 +145,6 @@ export function Sidebar({
     [projects, settings.showAgentSessions, settings.sidebarSort]
   )
   const sortLabel = t('sidebar.sort', { by: t(`sidebar.sort.${settings.sidebarSort}`) })
-
-  const openSortMenu = async (): Promise<void> => {
-    const choice = await window.api.showSortMenu(
-      { recent: t('sidebar.sort.recent'), name: t('sidebar.sort.name') },
-      settings.sidebarSort
-    )
-    if (choice && choice !== settings.sidebarSort) await updateSettings({ sidebarSort: choice })
-  }
 
   return (
     <aside className="sidebar">
@@ -164,7 +159,11 @@ export function Sidebar({
         />
         <button
           className="sidebar__sort"
-          onClick={openSortMenu}
+          onClick={(event) => {
+            // 키보드로 누르면 커서는 엉뚱한 데 있다. 메뉴가 늘 버튼 바로 아래에 뜨게 자리를 넘긴다
+            const rect = event.currentTarget.getBoundingClientRect()
+            onSortMenu({ x: rect.left, y: rect.bottom + 4 })
+          }}
           title={sortLabel}
           aria-label={sortLabel}
           aria-haspopup="menu"

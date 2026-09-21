@@ -10,6 +10,7 @@ import {
 import type {
   AppSettings,
   Conversation,
+  MenuAnchor,
   ProjectInfo,
   SearchHit,
   SearchProgress,
@@ -325,6 +326,24 @@ export default function App(): ReactElement {
     [t]
   )
 
+  const openSortMenu = useCallback(
+    async (at: MenuAnchor) => {
+      try {
+        const choice = await window.api.showSortMenu(
+          { recent: t('sidebar.sort.recent'), name: t('sidebar.sort.name') },
+          settings.sidebarSort,
+          at
+        )
+        if (choice && choice !== settings.sidebarSort) await updateSettings({ sidebarSort: choice })
+      } catch (error) {
+        // 조용히 죽으면 메뉴만 닫히고 아무 일도 없어, 잘못 누른 것과 구분이 안 된다
+        console.error('[sidebar] 정렬 기준 변경 실패', error)
+        showToast(t('sidebar.sortFailed'))
+      }
+    },
+    [settings.sidebarSort, showToast, t, updateSettings]
+  )
+
   const selectedProject = useMemo(
     () => projects.find((p) => p.id === selected?.projectId) ?? null,
     [projects, selected]
@@ -463,6 +482,7 @@ export default function App(): ReactElement {
           onToggle={toggleExpanded}
           onSelectSession={selectSession}
           onSessionMenu={openSessionMenu}
+          onSortMenu={openSortMenu}
           onResizeStart={startSidebarResize}
         />
         {selected ? (

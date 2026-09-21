@@ -46,14 +46,20 @@ interface Tally {
 const byActivity = (a: { lastActiveAt: number }, b: { lastActiveAt: number }): number =>
   b.lastActiveAt - a.lastActiveAt
 
-// 대소문자를 가리지 않고, 이름 속 숫자는 크기대로 비교한다(repo2 < repo10)
+// 대소문자를 가리지 않고, 이름 속 숫자는 크기대로 비교한다(repo2 < repo10).
+// 로케일은 시스템을 따른다. 그래서 한글과 라틴 문자 중 어느 쪽이 앞서는지는 환경마다 다르다
 const nameCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
-// 경로가 달라도 이름은 같을 수 있다. 그때 순서가 입력 순서에 휘둘리지 않게 최근 순으로 가른다
-const byName = (
+type Order = (
   a: { name: string; lastActiveAt: number },
   b: { name: string; lastActiveAt: number }
-): number => nameCollator.compare(a.name, b.name) || byActivity(a, b)
+) => number
+
+// 경로가 달라도 이름은 같을 수 있다. 그때 순서가 입력 순서에 휘둘리지 않게 최근 순으로 가른다
+const byName: Order = (a, b) => nameCollator.compare(a.name, b.name) || byActivity(a, b)
+
+// 기준을 늘리면 여기서 컴파일 에러가 난다 — 새 기준이 조용히 다른 순서로 동작하지 않게 한다
+const ORDERS: Record<SidebarSort, Order> = { recent: byActivity, name: byName }
 
 export function buildGroups(
   projects: ProjectInfo[],
@@ -61,7 +67,7 @@ export function buildGroups(
   sort: SidebarSort = 'recent'
 ): ProjectGroup[] {
   // 화면에 항목으로 보이는 그룹과 하위 항목만 기준을 따른다
-  const byOrder = sort === 'name' ? byName : byActivity
+  const byOrder = ORDERS[sort]
 
   // 표시할 세션 수는 토글에 따라 달라진다. 카운트 배지와 "빈 그룹 숨김" 판정이 같은 값을 써야
   // 숫자와 실제 목록이 어긋나지 않는다.

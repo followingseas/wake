@@ -469,6 +469,47 @@ describe('buildGroups', () => {
       'name'
     )
 
-    expect(groups.map((g) => g.id)).toEqual(['repo:/y/app', 'repo:/x/app'])
+    expect(groups.map((g) => g.rootPath)).toEqual(['/y/app', '/x/app'])
+  })
+
+  it('이름순은 한글 이름도 가나다순으로 놓는다', () => {
+    // 한글과 라틴 문자 중 어느 쪽이 앞서는지는 로케일마다 달라 여기서 단언하지 않는다
+    const groups = buildGroups(
+      [
+        project({ id: 'b', name: '나다', sessionCount: 1, userSessionCount: 1, lastActiveAt: 9 }),
+        project({ id: 'a', name: '가나', sessionCount: 1, userSessionCount: 1, lastActiveAt: 1 })
+      ],
+      false,
+      'name'
+    )
+
+    expect(groups.map((g) => g.name)).toEqual(['가나', '나다'])
+  })
+
+  it('정렬 기준을 바꿔도 그룹 구성과 세션 수는 같고 순서만 달라진다', () => {
+    const projects = [
+      project({ id: 'zulu', sessionCount: 2, userSessionCount: 2, lastActiveAt: 5 }),
+      // 가장 최근이지만 보여줄 세션이 없다
+      project({ id: 'hidden', sessionCount: 4, userSessionCount: 0, lastActiveAt: 99 }),
+      // 루트 프로젝트가 없어 합성 그룹이 된다
+      project({
+        id: 'wt',
+        realPath: null,
+        sessionCount: 1,
+        userSessionCount: 1,
+        lastActiveAt: 2,
+        repo: worktree('/x/alpha', 'feature')
+      })
+    ]
+    const tally = (groups: ReturnType<typeof buildGroups>): Record<string, number> =>
+      Object.fromEntries(groups.map((g) => [g.id, g.totalSessions]))
+
+    const recent = buildGroups(projects, false, 'recent')
+    const named = buildGroups(projects, false, 'name')
+
+    expect(tally(named)).toEqual(tally(recent))
+    expect(tally(named)).toEqual({ 'repo:/repo/zulu': 2, 'synthetic:/x/alpha': 1 })
+    expect(recent.map((g) => g.name)).toEqual(['zulu', 'alpha'])
+    expect(named.map((g) => g.name)).toEqual(['alpha', 'zulu'])
   })
 })
