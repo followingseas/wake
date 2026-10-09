@@ -1129,7 +1129,7 @@ button {
 .conversation--empty {
   align-items: center;
   justify-content: center;
-  -webkit-app-region: drag;
+  /* 창 이동은 상단 바에서만 한다. 본문 위의 배너 클릭이 창 드래그로 해석되면 안 된다. */
 }
 
 .empty-state {
@@ -1350,7 +1350,21 @@ body.is-resizing {
   padding: 10px 12px 10px 16px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   z-index: 55;
-  animation: toast-in 0.18s ease;
+  /* 위치를 움직이면 Electron의 클릭 제외 영역과 어긋날 수 있으므로 투명도만 바꾼다. */
+  animation: update-banner-in 0.18s ease;
+}
+
+.update-banner button {
+  -webkit-app-region: no-drag;
+}
+
+@keyframes update-banner-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .update-banner__text {
