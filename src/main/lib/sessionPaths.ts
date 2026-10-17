@@ -24,17 +24,22 @@ function inside(root: string, path: string): boolean {
 export async function sessionFileProvider(filePath: string): Promise<SessionProvider | null> {
   if (typeof filePath !== 'string' || !filePath.endsWith('.jsonl')) return null
   const path = resolve(filePath)
+  // 파일 시스템에 닿기 전에 경로만으로 루트를 거른다. 렌더러가 보낸 임의 경로(Windows UNC 등)는 조회하지 않는다.
+  // 두 루트가 겹치면(CHV_DATA_DIR 아래에 CODEX_HOME) 둘 다 파일의 상위이므로 더 긴 쪽이 더 깊은 루트다
+  const [match] = (
+    [
+      ['claude', claudeRoot()],
+      ['codex', codexRoot()]
+    ] as const
+  )
+    .filter(([, root]) => inside(root, path))
+    .sort(([, a], [, b]) => b.length - a.length)
+  if (!match) return null
+  const [provider, root] = match
   const actual = await realpath(path).catch(() => null)
   if (!actual) return null
   const info = await stat(actual).catch(() => null)
   if (!info?.isFile()) return null
-  for (const [provider, root] of [
-    ['claude', claudeRoot()],
-    ['codex', codexRoot()]
-  ] as const) {
-    if (!inside(root, path)) continue
-    const actualRoot = await realpath(root).catch(() => null)
-    if (actualRoot && inside(actualRoot, actual)) return provider
-  }
-  return null
+  const actualRoot = await realpath(root).catch(() => null)
+  return actualRoot && inside(actualRoot, actual) ? provider : null
 }
